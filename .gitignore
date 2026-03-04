@@ -1,0 +1,53 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# IDEs & editors
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Build output
+bin/
+obj/
+out/
+*.o
+*.a
+*.lib
+*.dll
+*.exe
+*.pdb
+
+# .NET / NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.assets.json
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Logs & temp
+*.log
+*.tmp
+*.bak
+*.orig
+Thumbs.db
