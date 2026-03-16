@@ -8,7 +8,7 @@ The CE-158 has its own rechargeable Ni-Cad battery. Its power switch must be **O
 
 The CE-158 must also be physically connected to the PC-1500 when programs using CE-158 commands are **created** or **executed**.
 
-→ [Error Code Reference](Error-Codes.md)
+→ [Command Index](Command-Index.md) · [Error Code Reference](Error-Codes.md)
 
 ### RS-232C Specifications
 
@@ -628,6 +628,6 @@ See the [Error Code Reference](Error-Codes.md) for all CE-158 error codes (50–
 
 ## See Also
 
-- [PC-1500 BASIC Reference](README.md) — Core BASIC commands
+- [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md) — Core BASIC commands
 - [CE-150 Printer/Cassette Reference](CE-150-Reference.md) — Plotter and cassette interface
 - [Error Code Reference](Error-Codes.md) — All error codes

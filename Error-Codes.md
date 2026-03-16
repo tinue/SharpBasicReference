@@ -97,6 +97,6 @@ Errors 70–80 require the **CE-150** printer/plotter interface.
 
 ## See Also
 
-- [PC-1500 BASIC Reference](README.md) — Core language, `ON ERROR GOTO`, `ERN`, `ERL`, `ERROR`
+- [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md) — Core language, `ON ERROR GOTO`, `ERN`, `ERL`, `ERROR`
 - [CE-150 Reference](CE-150-Reference.md) — Printer, plotter, and cassette commands
 - [CE-158 Reference](CE-158-Reference.md) — RS-232C and parallel interface commands

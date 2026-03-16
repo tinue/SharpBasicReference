@@ -6,7 +6,7 @@ The **Sharp CE-150** is a Printer/Cassette Interface for the Sharp PC-1500 pocke
 
 **All CE-150 commands require the CE-150 to be physically connected to the PC-1500.** They will not work on the standalone PC-1500.
 
-→ [Error Code Reference](Error-Codes.md)
+→ [Command Index](Command-Index.md) · [Error Code Reference](Error-Codes.md)
 
 ### Key Features
 
@@ -400,6 +400,32 @@ Reads variable values from cassette tape that were previously saved with `PRINT#
 
 ---
 
+### CSAVE M — Save Machine Language
+
+- **Syntax**: `CSAVE M address1, address2 [, address3]` or `CSAVE M-1 address1, address2 [, address3]`
+- **Abbreviations**: CS. CSA. CSAV. (for CSAVE)
+
+Saves a block of raw memory bytes to cassette tape. `address1` is the start address, `address2` is the end address. If `address3` is given, the block will auto-execute at that address when loaded with `CLOAD M`.
+
+`CSAVE M-1` uses the second tape recorder connected to the REM 1 terminal.
+
+```
+CSAVE M &4700, &47FF, &4700   : REM save and set auto-run address
+```
+
+---
+
+### CLOAD M — Load Machine Language
+
+- **Syntax**: `CLOAD M [address]` or `CLOAD M-1 [address]`
+- **Abbreviations**: CLO. CLOA. (for CLOAD)
+
+Loads a machine language block from tape back into the same memory addresses used when it was saved. If `address` is specified, loads starting at that address instead. If the saved file included an auto-run address (set via the third argument of `CSAVE M`), execution jumps there automatically after loading — unless a load address override is specified.
+
+`CLOAD M-1` uses the second tape recorder.
+
+---
+
 ### RMT ON / RMT OFF
 
 - **Syntax**: `RMT ON` or `RMT OFF`
@@ -504,8 +530,9 @@ See the [Error Code Reference](Error-Codes.md) for all CE-150 error codes (11, 1
 
 ## See Also
 
-- [PC-1500 BASIC Reference](README.md) — Core BASIC commands
+- [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md) — Core BASIC commands
 - [CE-158 Communications Reference](CE-158-Reference.md) — Serial interface
+- [Error Code Reference](Error-Codes.md) — All error codes
 
 ---
 
