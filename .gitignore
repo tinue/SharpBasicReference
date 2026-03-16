@@ -45,6 +45,9 @@ packages/
 *.nuget.props
 *.nuget.targets
 
+# Reference / source materials (PDFs, lib files, analysis)
+reference/
+
 # Logs & temp
 *.log
 *.tmp
