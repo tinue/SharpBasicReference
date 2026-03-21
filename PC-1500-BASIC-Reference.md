@@ -379,18 +379,18 @@ INPUT "X, Y"; X, Y
 
 Non-blocking keyboard read. Returns the character of the key currently held down.
 
-> **Warning**: When no key is pressed, `INKEY$` returns a **space character** `" "` — not an empty string. Checking `IF INKEY$ = ""` will never be true.
+> **Warning**: When no key is pressed, `INKEY$` returns NUL (CHR$(0)), which is the same as ""
 
 To wait for any key:
 ```
-10 IF INKEY$ = " " THEN GOTO 10
+10 IF INKEY$ <> "" GOTO 10
 ```
 
 To wait for a specific key:
 ```
 10 LET K$ = INKEY$
-20 IF K$ = " " THEN GOTO 10
-30 IF K$ = "A" THEN GOSUB 200
+20 IF K$ = "" GOTO 10
+30 IF K$ = "A" GOSUB 200
 ```
 
 ---
