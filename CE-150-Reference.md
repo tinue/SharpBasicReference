@@ -13,13 +13,14 @@ The **Sharp CE-150** is a Printer/Cassette Interface for the Sharp PC-1500 pocke
 - **4-color pen plotter/printer**: Black, Blue, Green, and Red pens (conventional assignment)
 - **Two printer modes**: TEXT mode for character printing; GRAPH mode for X-Y plotting
 - **Cassette tape interface**: Save and load programs and data; chain programs together
-- **Roll paper**: 40mm wide paper roll
+- **Roll paper**: 56mm wide paper roll (continuous tape; the tape can also be rolled back)
 
 ### Hardware Specifications
 
 | Specification | Value |
 |---------------|-------|
-| Paper width | 40mm roll paper |
+| Paper width | 56mm roll paper (continuous tape, no page length; feeds forward and back) |
+| Printable width (X) | X = 0 to 216 plotter units ≈ 42.75mm (0.198mm per unit); the pen clips at this edge |
 | Pen colors | 4 pens (slots 0-3 clockwise from position-detecting magnet) |
 | Character sizes | 9 sizes (CSIZE 1-9) |
 | Characters per line | 4, 5, 6, 7, 9, 12, 18, or 36 depending on CSIZE |
@@ -445,7 +446,8 @@ Used with `CSAVE-1` and `CLOAD-1` operations.
 - The origin (0,0) is set by `SORGN` at the current pen position.
 - X axis is horizontal (positive = right).
 - Y axis is vertical (positive = up).
-- Valid range: -2048 to +2047 for both X and Y.
+- Valid range: -2048 to +2047 for both X and Y (`ERROR 70` outside this; it is a coordinate range check, not the paper edge).
+- Physical drawable area: X spans **0 to 216 plotter units ≈ 42.75mm** across the 56mm tape. The scale is **0.198mm per unit** (= 190mm / 960 units, taken from the CE-1600P, whose wider carriage gives a more accurate ruler reading; a crude ruler check of the CE-150 itself gave ~43mm, consistent). Y is unbounded — the paper is continuous tape, not a page — the only limit being the ~10.24cm maximum backward feed in TEXT mode (`ERROR 71`).
 - If the pen is commanded outside the drawable area, it stops at the edge. The internal counters continue tracking the commanded position, so the pen will resume drawing correctly once it returns within bounds.
 
 ---
