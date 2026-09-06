@@ -520,10 +520,31 @@ Usable commands: `INIT`, `INPUT#`, `LOAD`, `OPEN`, `PCONSOLE`, `RXD$`, `SNDBRK`.
   → `CLOSE`.
 - **A whole file:** `LOAD` from the port, as from disk.
 
-### 13. Debugging — **TODO**
-- Syntax errors
-- Trace mode
-- Error-processing routines
+### 13. Debugging
+
+#### Syntax errors
+
+On the first run, syntax and most other errors are caught line by line as execution reaches them.
+Execution stops at the first error, showing the error code and line number (see
+[PC-1600 Error Codes](PC-1600-Error-Codes.md)). For a syntax error (**ERROR 1**): `LIST <line>`,
+or press **CL** to clear the message, **MODE** to PRO, then **↑** to show the line with the cursor
+at the fault; edit and `RUN` again. Repeat for each successive error.
+
+#### Trace mode
+
+`TRON` / `TROFF` follow execution line by line. With trace on, the computer executes one line,
+then pauses **0.5 s** with the line number shown at the right of the screen before the next line.
+It can also be set to execute one line and wait for the **↓** key before continuing. Trace runs
+until `TROFF`.
+
+Place `STOP` statements at checkpoints to halt and inspect interim results; resume with `CONT`.
+
+#### Error-processing routines
+
+`ON ERROR GOTO <line>` at the start of the program redirects any subsequent error to a handler
+instead of stopping execution — typically to correct the fault or re-prompt the user. Inside the
+handler, `ERN` gives the error code and `ERL` the line; `RESUME` continues execution (or the
+handler ends with a message). See the `ON ERROR GOTO` dictionary entry for an example.
 
 ---
 
