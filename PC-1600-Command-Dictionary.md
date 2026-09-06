@@ -742,3 +742,86 @@ GPRINT "102812F0122810"
 ### PAUSE
 - **Format:** `PAUSE [<list of expressions>][;]` | `PAUSE USING <format>;<list>` — **Abbr.** `PA.` — **See also:** PRINT, WAIT
 - **Purpose:** Like `PRINT`, but in MODE 1 the data shows for a fixed **0.85 s** then scrolls (≈ `WAIT` + `PRINT`). MODE 1 list max 2 items.
+
+### PCONSOLE  **(PC-1600)**
+- **Format:** `PCONSOLE "LPT1:",[<line length>],[<EOL code>],[<offset>]` | `PCONSOLE "COMn:",[<line length>],[<EOL code>]` — **Abbr.** `PCONS.`
+- **Purpose:** Print format / end-of-line for the printer (`LPT1:`) or a serial port (`COMn:`).
+- **Remarks:** `<line length>` 16–255, or `0` = unlimited. `<EOL code>` 0 = CR, 1 = LF, 2 = CR+LF (other values → error); **ignored on the CE-1600P** (all CR → CR+LF). `<offset>` = blank columns at the line head, `<= line length - 4`. Defaults all 0. For file transfers via a port (`SAVE`/`LOAD`/`PRINT#`/`INPUT#`) the EOL is fixed CR+LF. Settings persist until changed; `CSIZE` scales `<line length>` proportionally (offset unchanged).
+
+```
+>PCONSOLE "LPT1:",42,2,3
+```
+
+### PEEK
+- **Format:** `PEEK(<address>)` | `PEEK #<bank>,<address>` — **Abbr.** `PE.` — **See also:** POKE, XPEEK, XPOKE
+- **Purpose:** One byte from memory (Z-80A space). `<address>` `&0`–`&FFFF`, `<bank>` 0–7. Format 1 with `&C000`–`&FFFF` reads bank-0 internal RAM; use format 2 for any other area. See Appendix D. (PC-1500's `PEEK` is `XPEEK` here.)
+
+```
+>PEEK#(0,100)     → 17
+```
+
+### PHONE ON / OFF / STOP  **(PC-1600)**
+- **Format:** `PHONE ON` | `PHONE OFF` | `PHONE STOP` — **Abbr.** `PH.` — **See also:** ON PHONE GOSUB
+- **Purpose:** Enable/disable modem interrupts on the RS-232C port. `ON` + `ON PHONE GOSUB` to branch; `STOP` latches the last request for a later `ON`. **Default STOP.**
+
+### PITCH
+- **Format:** `PITCH [<char pitch>][,<line spacing>]` — **Abbr.** `PI.` — **See also:** CSIZE
+- **Purpose:** Printer character pitch and line spacing (TEXT mode). Char pitch: default `6 × CSIZE × 0.2 mm`, else `<char pitch> × 0.2 mm` (4–240). Line spacing: default `12 × CSIZE × 0.2 mm`, else `<line spacing> × 0.2 mm` (4–255). Reset to defaults by `TEXT`, `GRAPH`, `CSIZE`, `LLIST`, `TEST`, `PCONSOLE`. In graphics mode `<line spacing>` is ignored.
+
+### POINT
+- **Format:** `POINT (<X>,<Y>)` | `POINT (<Xcol>)` — **Abbr.** `POI.` — **See also:** GPRINT, PRESET, PSET
+- **Purpose:** Format 1: `1`/`0` — is the dot at `(X,Y)` set? Format 2: the 0–255 bit-image value of the 8-dot column `<Xcol>` on the current line. Normal range X 0–155, Y 0–31 (values −32768..32767 accepted, off-screen returns 0).
+
+### POKE
+- **Format:** `POKE [#<bank>,]<address>,<integer list>` — **Abbr.** `PO.` — **See also:** PEEK, XPEEK, XPOKE
+- **Purpose:** Write bytes (0–255) to consecutive addresses from `<address>` (`&0`–`&FFFF`) in `<bank>` 0–7 (default: the bank holding the running program's header). Insufficient free memory → error. See Appendix D. (PC-1500's `POKE` is `XPOKE` here.)
+
+```
+>POKE #2,&FF00,255,255
+```
+
+### POWER  **(PC-1600)**
+- **Format:** `POWER OFF` | `POWER AOFF [(<n>)]` — **Abbr.** `POW.` — **See also:** ALARM$, ARUN, WAKE$
+- **Purpose:** `POWER OFF` — switch off immediately (direct or in-program). `POWER AOFF (0)` (or no arg) — auto power-off 10 min after the last key/step; `POWER AOFF (1)` — disable auto power-off. ALL RESET default: auto-off after 10 min, auto-on from modem or at a set time (`WAKE$`).
+
+### PRESET
+- **Format:** `PRESET(<X>,<Y>)` — **Abbr.** `PRE.` — **See also:** PSET, LINE
+- **Purpose:** Turn **off** the screen dot at `(X,Y)` (range 0–155 × 0–31; wider values accepted, no effect off-screen).
+
+### PRINT
+- **Format:** `PRINT [<list of expressions>][;]` — **Abbr.** `P.` — **See also:** MODE, PRINT USING, WAIT
+- **Purpose:** Output to the screen. `;` between items = adjacent; `,` = next 13-column print zone (numbers right-justified, strings left-justified). Trailing `;` keeps the next output on the same line. `PRINT` alone = blank line. In MODE 1, execution waits for `ENTER` after each `PRINT` and the list is max 2 comma-separated items; in MODE 0 the display holds for the last `WAIT` time. No `TAB` (use `CURSOR` or `USING`).
+
+```
+50:PRINT "THE VALUES: ";A;B;C
+60:PRINT "THE VALUES: ",A,B,C
+```
+
+### PRINT# / PRINT# USING  **(PC-1600)**
+- **Format:** `PRINT#<file#>,<list of expressions>` | `PRINT#<file#>,USING <format>;<list>` | `PRINT#["<filename>";]<list of variables>` — **Abbr.** `P.#` / `P.#U.` — **See also:** INPUT#, OPEN, PRINT USING
+- **Purpose:** Write to a sequential output file (disk / RAM disk by `<file#>` from `OPEN`; cassette by name, default = current tape position, no name). `;` = items adjacent; `,` = a blank between items, and a literal delimiting comma must be written as its own quoted `","` item. Cassette form (3) allows only `,` as separator; arrays as `A(*)`, no single elements.
+
+### PRINT USING / USING
+- **Format:** `PRINT USING <format string>;<list of expressions>` | `USING <format string>` — **Abbr.** `P. U.` / `U.` — **See also:** PRINT, LPRINT USING
+- **Purpose:** Formatted output. `#` builds numeric fields, `&` string fields; expressions semicolon-separated. Standalone `USING` sets a format for all following `PRINT`s until the next `USING`; `USING` / `PRINT USING` with no string clears it. Field-character limit: 11 (`#`/`*`) per string, 14 for the thousands format.
+- **Numeric format characters:**
+
+| Format | Meaning |
+|--------|---------|
+| `###` | integer (leading `-` shown, `+` not) |
+| `###.` | integer with trailing decimal point |
+| `###.##` | fixed point, fractional digits |
+| `##.##^` | floating point — mantissa + `E` + ≥2-column exponent |
+| `###,###.` | integer with thousands comma |
+| `+###` | signed integer (leading `+` or `-`) |
+| `*####` | integer, leading spaces filled with `*` |
+| `&&&&&&` | string field, left-justified |
+
+```
+40:USING "###.##"
+60:PRINT A;B;C
+```
+
+### PSET
+- **Format:** `PSET(<X>,<Y>)[,<function code>]` — **Abbr.** `PS.` — **See also:** PRESET, LINE
+- **Purpose:** Turn **on** the screen dot at `(X,Y)` (0–155 × 0–31). Function code `X` = invert the dot instead. Wider coordinates accepted, no effect off-screen.
