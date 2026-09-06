@@ -351,11 +351,118 @@ parentheses are sometimes needed. Its worked examples:
 | (sin 30°)² | `SIN 30^2` |
 | cos⁴(A+B) | `(COS(A+B))^4` |
 
-### 11. Files — **TODO**
-- File descriptors (logical device name / medium, file name, extension)
-- File storage and retrieval (cassette files; disk files — directories, file counts, wildcard descriptors)
-- File protection
-- Creating / accessing / updating a file
+### 11. Files
+
+All PC-1600 files are **sequential** — data is read/written from first item to last; no random
+access. A file holds character-code text (including BASIC program lines) or binary data, on RAM
+disk, cassette or floppy, and can also pass over the serial ports.
+
+#### File descriptor
+
+Format `d:filename.ext`.
+
+**Device names** (each followed by `:`):
+
+| Name | Device |
+|------|--------|
+| `S1:` / `S2:` | Memory module in slot 1 / slot 2 (RAM disk) |
+| `COM1:` | RS-232C serial port |
+| `COM2:` | Optical serial port |
+| `COM:` | Currently accessed serial port |
+| `CAS:` | Cassette recorder on the CE-1600P |
+| `X:` / `Y:` | 2.5″ floppy disk drive (CE-1600F) |
+
+**File name** — up to 8 characters from `A–Z 0–9 # $ % & ' ( ) - / < > { } @`. Required for every
+saved file except cassette files saved in PC-1500-compatible mode with `CSAVE`.
+
+**Extension** — up to 3 characters after a `.`, user-chosen (e.g. `.FIN`, `.BIN`). `SAVE`
+automatically appends **`.BAS`** to BASIC programs; `LOAD` assumes `.BAS` if no extension is given;
+`FILES` / `LFILES` show `.BAS` unless another extension was set; `COPY` **requires** the `.BAS` to
+be given explicitly.
+
+#### Storage & retrieval
+
+**Cassette** — files sit on the tape in save order; `LOAD` winds the tape (via remote control) to
+the label bearing the requested name. Slow. No directory. Commands: `BLOAD`, `BSAVE`, `CHAIN`,
+`CLOAD`, `CLOAD?`, `CLOAD M`, `CLOSE`, `CSAVE`, `CSAVE M`, `INPUT#`, `LOAD`, `MAXFILES`, `MERGE`,
+`OPEN`, `PRINT#`, `RMT ON/OFF`, `SAVE`. The `CLOAD*` / `CSAVE*` set exists only for PC-1500
+compatibility.
+
+**Floppy / RAM disk** — sectored, direct access, near-instant load. A **directory** (shown by
+`FILES` on screen, `LFILES` on the printer) lists `filename.ext,P  MM/DD HH:MM` — name, `P` if
+write-protected (`SET`), date last written, time. Commands: `BLOAD`, `BSAVE`, `CLOSE`, `COPY`,
+`FILES`, `INIT`, `INPUT#`, `KILL`, `LFILES`, `LOAD`, `MAXFILES`, `NAME`, `OPEN`, `PRINT#`, `SAVE`,
+`SET`. Directory capacity: **48** files on a floppy, **48** on the CE-1600M RAM disk.
+
+> **CE-159** program modules hold a single program, not a named file — not loaded with `LOAD`.
+> Make the slot active with `TITLE`, then `RUN`.
+
+**Wildcards** — `?` matches any run of single characters, `*` matches a whole name and/or whole
+extension. `*.*` lists everything. Usable with `FILES` / `LFILES`, and `?` also with `ALARM$`
+times.
+
+Examples: `?ET` → `SET MET RET …`; `????.B??` → `REP1.BAS DAT1.BIN …`; `*.*` → any name, any ext.
+
+#### Protection
+
+- **`SET`** — per-file write protection on floppy / RAM disk (cannot be written or destroyed).
+- **Hardware** — floppy: a write-protect switch per disk side. RAM module: a front write-protect
+  switch, set with the computer **OFF**.
+- **`PASS`** — password on internal memory; it cannot be erased, edited or listed without the
+  password.
+
+#### Creating a file
+
+1. `MAXFILES` — set the number of files that may be open.
+2. `OPEN "d:name" FOR OUTPUT AS #n` — name it, give it a file number, open for output.
+3. `PRINT#n, …` — write data.
+4. `CLOSE #n` — must close before it can be reopened for input.
+
+```
+ 5 MAXFILES = 1
+10 OPEN "X:ADDRESS" FOR OUTPUT AS #1
+20 INPUT "ENTER NAME?";N$
+30 IF N$ = "END" THEN 100
+40 INPUT "ENTER CITY?";C$
+50 INPUT "ENTER TEL. NUMBER?";T$
+60 PRINT#1,N$;",";C$;",";T$
+70 PRINT
+80 GOTO 20
+100 CLOSE #1
+110 END
+```
+
+> Reopening a file `FOR OUTPUT` **erases** its previous contents. To keep them, open
+> `FOR APPEND AS #n` (floppy / RAM disk only) — data can only be added at the **end** (a sequential
+> file cannot have items inserted mid-list; read all, re-order in memory, rewrite).
+
+#### Accessing a file
+
+1. `MAXFILES`.
+2. `OPEN "d:name" FOR INPUT AS #n`.
+3. `INPUT #n, var…` — each call reads the next item; reading past the end without a guard gives
+   **ERROR 165**. Test with `EOF(n)`.
+4. `CLOSE #n` before reopening for output/append.
+
+```
+ 5 MAXFILES = 1
+10 OPEN "X:ADDRESS" FOR INPUT AS #1
+20 PRINT "NEW YORK"
+30 PRINT:PRINT "NAME","TEL. NUMBER"
+40 IF EOF(1) THEN 100
+50 INPUT #1,N$,C$,T$
+60 IF C$ = "NEW YORK" THEN 80
+70 GOTO 40
+80 PRINT N$,T$
+90 GOTO 40
+100 CLOSE #1
+110 END
+```
+
+String comparison in line 60 needs exact spelling, spacing and case.
+
+`DSKF`, `EOF`, `LOC`, `LOF`, `MAXFILES` help advanced programs check sizes and avoid
+device-full / file errors.
 
 ### 12. Access to Serial Ports — **TODO**
 - Specifying the port
