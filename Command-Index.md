@@ -391,3 +391,34 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 - [RIGHT$](PC-1600-Command-Dictionary.md#right)
 - [RLINE](PC-1600-Command-Dictionary.md#rline)
 - [RMT ON / OFF](PC-1600-Command-Dictionary.md#rmt-on--off)
+- [RND](PC-1600-Command-Dictionary.md#rnd)
+- [ROTATE](PC-1600-Command-Dictionary.md#rotate)
+- [RUN](PC-1600-Command-Dictionary.md#run)
+- [RXD$](PC-1600-Command-Dictionary.md#rxd)
+
+### S
+
+- [SAVE / SAVE*](PC-1600-Command-Dictionary.md#save--save)
+- [SET](PC-1600-Command-Dictionary.md#set)
+- [SETCOM](PC-1600-Command-Dictionary.md#setcom)
+- [SETDEV](PC-1600-Command-Dictionary.md#setdev)
+- [SGN](PC-1600-Command-Dictionary.md#sgn)
+- [SIN](PC-1600-Command-Dictionary.md#sin)
+- [SNDBRK](PC-1600-Command-Dictionary.md#sndbrk)
+- [SNDSTAT](PC-1600-Command-Dictionary.md#sndstat)
+- [SORGN](PC-1600-Command-Dictionary.md#sorgn)
+- [SQR](PC-1600-Command-Dictionary.md#sqr)
+- [STATUS](PC-1600-Command-Dictionary.md#status)
+- [STOP](PC-1600-Command-Dictionary.md#stop)
+- [STR$](PC-1600-Command-Dictionary.md#str)
+
+### T
+
+- [TAB](PC-1600-Command-Dictionary.md#tab)
+- [TAN](PC-1600-Command-Dictionary.md#tan)
+- [TEST](PC-1600-Command-Dictionary.md#test)
+- [TEXT](PC-1600-Command-Dictionary.md#text)
+- [TIME](PC-1600-Command-Dictionary.md#time)
+- [TIME$](PC-1600-Command-Dictionary.md#time-1)
+- [TIME$ ON / OFF / STOP](PC-1600-Command-Dictionary.md#time-on--off--stop)
+- [TITLE](PC-1600-Command-Dictionary.md#title)

@@ -910,3 +910,142 @@ GPRINT "102812F0122810"
 ### RMT ON / OFF
 - **Format:** `RMT ON` | `RMT OFF` — **Abbr.** `RM.`
 - **Purpose:** Enable / disable the computer's remote-control of cassette-recorder power during tape I/O.
+
+### RND
+- **Format:** `RND(<X>)` — **Abbr.** `RN.` — **See also:** RANDOM
+- **Purpose:** Random number, 10 significant digits. `X < 0` — restart the same sequence each call. `0 < X < 1` — a value in `[0,1)`. `X > 1` — an integer in `1…X`. Without `RANDOM` the same sequence recurs from each power-on.
+
+### ROTATE
+- **Format:** `ROTATE <position>` — **Abbr.** `RO.`
+- **Purpose:** Printer character orientation / head-travel direction, `<position>` 0–3 (0 normal, 1 down, 2 upside-down, 3 up). Default = last `ROTATE` value.
+
+### RUN
+- **Format:** `RUN` | `RUN <line#/label>` — **Abbr.** `R.` — **See also:** CONT, GOTO, LOAD, MERGE
+- **Purpose:** Execute from the lowest line (or the given line/label). Clears all variables and arrays and resets the `DATA` pointer.
+
+### RXD$  **(PC-1600)**
+- **Format:** `RXD$`
+- **Purpose:** Hex string of the byte currently arriving at the `SETDEV`-selected serial port. No data → `&20 &20`; communication error → `&3F &20 &20`.
+
+---
+
+## S
+
+### SAVE / SAVE*
+- **Format:** `SAVE "<d:filename>"[,A]` | `SAVE* "<d:filename>"` — **Abbr.** `S.` — **See also:** LOAD, MERGE
+- **Purpose:** Save a program/data file to `S1:`/`S2:`, `X:`/`Y:`, `CAS:` or a serial port. `,A` = ASCII (else compressed binary). `SAVE*` saves **only** comment lines (`REM` / `'`) — a simple text store (retrieve with `LOAD*`). No extension → `.BAS` added. Overwrites an existing file unless `SET`-P or the medium is write-protected. To a port, only `COM2:` with `,A`; CR+LF = end of line, `&1A` = end of file.
+
+```
+>SAVE"X:CHESS"
+>SAVE*"S2:INFO"
+```
+
+### SET  **(PC-1600)**
+- **Format:** `SET "<d:filename>","P"` | `SET "<d:filename>"," "` — **See also:** KILL, NAME
+- **Purpose:** File write-protection on floppy / RAM disk. With `"P"` set: no writing (`OPEN` for `OUTPUT`/`APPEND` fails), no `KILL`, no `NAME`. Release with a space in place of `"P"`.
+
+### SETCOM  **(PC-1600)**
+- **Format:** `SETCOM "COMn:",[<BR>],[<WL>],[<PR>],[<ST>],[<XO>],[<SI>]` — **Abbr.** `SETC.` — **See also:** COM$, SETDEV
+- **Purpose:** Serial-port protocol. `<BR>` 50–38400; `<WL>` 5–8; `<PR>` `E`/`O`/`N`; `<ST>` 1/2; `<XO>` `X`/`N` (XON/XOFF); `<SI>` `S`/`N` shift in/out (7-bit data only). Defaults: RS-232C `1200,8,N,1,X,S`; optical `38400,7,E,2,X,S`.
+- **Note:** for `SAVE`/`LOAD`/`BSAVE`/`BLOAD` over a port, `<WL>` must be 8 and `<SI>` = `N` (unrestricted for ASCII `SAVE`/`LOAD` and for `PRINT#`/`INPUT#`).
+
+```
+>SETCOM "COM1:",,,E
+```
+
+### SETDEV  **(PC-1600)**
+- **Format:** `SETDEV "COMn:"[,PO][,KI]` — **Abbr.** `SE.`
+- **Purpose:** Open a serial port for I/O. `PO` = send `LPRINT`/`LLIST`/`LFILES` output to the port; `KI` = take `INPUT` data from the port. `SETDEV` with no parameters reverts output to the printer and input to the keyboard.
+
+### SGN
+- **Format:** `SGN(<X>)` — **Abbr.** `SG.`
+- **Purpose:** `1` if `X > 0`, `0` if `X = 0`, `-1` if `X < 0`.
+
+### SIN
+- **Format:** `SIN(<X>)` — **Abbr.** `SI.` — **See also:** ASN, COS, TAN
+- **Purpose:** Sine of `X`; unit per `DEGREE` / `RADIAN` / `GRAD`.
+
+### SNDBRK  **(PC-1600)**
+- **Format:** `SNDBRK "COMn:",<number>` — **Abbr.** `SNDB.`
+- **Purpose:** Send `<number>` (1–255) continuous break characters to a port to halt the other end's transmission (send several — the first may be missed).
+
+### SNDSTAT  **(PC-1600)**
+- **Format:** `SNDSTAT "COMn:",<protocol>[,<timeout>]` — **Abbr.** `SN.` — **See also:** RCVSTAT
+- **Purpose:** RS-232C send handshake + serial timeout. `<protocol>` 0–255: bit 3 = CTS must be high, bit 4 = CD must be high, bit 5 = DSR must be high (0 = "must be high", 1 = "don't care"); bits 1,2,6,7,8 = 0. No meaning for the optical port. `<timeout>` 0–255 × 0.5 s, `0` = infinite (default).
+
+### SORGN
+- **Format:** `SORGN` — **Abbr.** `SO.` — **See also:** LLINE, GLCURSOR
+- **Purpose:** Make the current pen position the graphics origin `(0,0)`. Default origin: X left home, Y the current paper position.
+
+### SQR
+- **Format:** `SQR(<X>)` — **Abbr.** `SQ.`
+- **Purpose:** Square root; negative `X` → error.
+
+```
+>PRINT SQR(5)     → 2.236067977
+```
+
+### STATUS
+- **Format:** `STATUS <value>` — **Abbr.** `STA.` — **See also:** MEM, NEW
+- **Purpose:** Memory-area information:
+
+| value | Returns |
+|-------|---------|
+| 0 | Free user memory (free area + variables area) in bytes |
+| 1 | Size of the loaded program(s) in bytes |
+| 2 | Lower address of the free user area |
+| 3 | Last address of the free user area + 1 |
+| 4–255 | Last line number executed for the current program |
+| 256 | Bank number holding the lower address of the free user area |
+| 257 | Bank number of the last bank of free user area in expansion RAM (0 if none) |
+| 258 | Unallocated user memory (free area) in bytes |
+| 259 | Unused memory in the slot-1 program module in bytes |
+| 260 | Unused memory in the slot-2 program module in bytes |
+
+### STOP
+- **Format:** `STOP` — **Abbr.** `ST.` — **See also:** CONT, END
+- **Purpose:** Halt for debugging — shows `BREAK IN <line#>`; resume with `CONT` (if unedited). Unlike `END`, files are **not** closed.
+
+### STR$
+- **Format:** `STR$(<numeric value>)` — **Abbr.** `STR.` — **See also:** VAL
+- **Purpose:** Numeric → string (same digits, treated as characters; leading `-` if negative; floating-point form if it won't fit). Inverse of `VAL`.
+
+---
+
+## T
+
+### TAB
+- **Format:** `TAB <column>` — **See also:** LCURSOR, LPRINT
+- **Purpose:** In printer TEXT mode, move the pen to a print column 0…(`PCONSOLE` line length); columns scale with `CSIZE`. Usable inside `LPRINT`. (This is the PC-1600 name for the PC-1500's `LCURSOR`.)
+
+### TAN
+- **Format:** `TAN(<X>)` — **Abbr.** `TA.` — **See also:** ATN, COS, SIN
+- **Purpose:** Tangent of `X`; unit per `DEGREE` / `RADIAN` / `GRAD`. `X = 90°` → error.
+
+### TEST
+- **Format:** `TEST` — **Abbr.** `TE.`
+- **Purpose:** Printer self-test — draws four boxes in colour order black → blue → green → red, then sets text mode. Interrupt with BREAK.
+
+### TEXT
+- **Format:** `TEXT` — **Abbr.** `TEX.` — **See also:** GRAPH
+- **Purpose:** Set the printer to text mode: character size 2, origin at the pen's left position; resets the `PAPER` `<limit from>` / `<limit to>` to defaults.
+
+### TIME
+- **Format:** `TIME` | `TIME = MMDDHH.mmss` — **See also:** TIME$
+- **Purpose:** Read / set the clock as `MMDDHH.mmss` (month, day, hour, minute, seconds). Survives power-off; no leap-year handling. `TIME = 0` is not allowed on the PC-1600 (cf. PC-1500).
+
+```
+>TIME=031220.3215     'March 12, 20:32:15
+```
+
+### TIME$  **(PC-1600)**
+- **Format:** `TIME$ = "HH:mm:ss"` | `TIME$` — **Abbr.** `TI.` — **See also:** DATE$, TIME$ ON/OFF/STOP, ON TIME$ GOSUB
+- **Purpose:** Real-time-clock time. As a statement sets it (`HH` 00–23, `mm`/`ss` 00–59, colon-separated); as a value returns `HH:mm:ss`.
+
+### TIME$ ON / OFF / STOP  **(PC-1600)**
+- **Format:** `TIME$ ON` | `TIME$ OFF` | `TIME$ STOP` — **Abbr.** `TI.` — **See also:** ON TIME$ GOSUB
+- **Purpose:** Enable/disable all `ON TIME$ GOSUB`. `STOP` disables but, on a later `TIME$ ON`, jumps immediately if the set time passed meanwhile. **Default STOP.**
+
+### TITLE  **(PC-1600)**
+- **Format:** `TITLE "S0:"` | `TITLE "S1:"` | `TITLE "S2:"` | `TITLE?` — **Abbr.** `TIT.`
+- **Purpose:** Select the active memory: `S0:` internal RAM (ALL RESET default), `S1:`/`S2:` the program module in that slot; `TITLE?` returns 0/1/2. Error if the slot holds a RAM-disk module rather than a program module. After `TITLE` during an execution halt, ↑/↓ may not list the module's program — use `LIST`.
