@@ -1,12 +1,13 @@
 # Sharp PC-1600 BASIC Reference
 
-→ [Command Index](Command-Index.md) · [PC-1600 Error Codes](PC-1600-Error-Codes.md) · [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md)
+→ [Command Dictionary](PC-1600-Command-Dictionary.md) · [Command Index](Command-Index.md) · [PC-1600 Error Codes](PC-1600-Error-Codes.md) · [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md)
 
-> **Status:** This document is being built section by section from the PC-1600 Operation Manual
-> (English, `PC-1600_Operation_Manual.pdf`; the German *Bedienungsanleitung* has identical content
-> but poorer OCR and is used only to resolve ambiguities), with hardware detail from chapter 4 of
-> the *PC-1600 Systemhandbuch* (Holtkötter). Sections still marked **TODO** have not been written yet.
-> The source manual's structure is Part IV, chapters 8–14, plus Appendices.
+> **Source:** the PC-1600 Operation Manual — English `PC-1600_Operation_Manual.pdf` as the primary
+> text (the German *Bedienungsanleitung* has identical content but poorer OCR and was used only to
+> resolve ambiguities). Manual structure: Part IV, chapters 8–14, plus Appendices. Detailed
+> per-command entries live in the separate [PC-1600 Command Dictionary](PC-1600-Command-Dictionary.md).
+> Keyboard-glyph images could not be OCR'd from either edition; key names in chapter 9 are
+> reconstructed from the surrounding prose.
 
 ---
 
@@ -788,18 +789,154 @@ Format-description notation: `[ ]` optional, `< >` a value you supply, `( )` lit
 
 ---
 
-## Appendices — **TODO**
-- A. Replacing the batteries
-- B. Replacing the RAM modules
-- C. Character code tables
-- D. Memory maps
-- E. Machine-language programs
-- F. Error codes — see **[PC-1600 Error Codes](PC-1600-Error-Codes.md)**
-- G. BASIC command list — folded into the dictionary index above
-- H. Compatibility with the PC-1500 model and peripherals — see [Compatibility](#part-iv--basic-reference-section) note in Overview; details TODO
-- I. Care & troubleshooting
-- J. Specifications
-- K. Syntax diagrams (German edition only)
+## Appendices
+
+### A. Replacing the batteries
+
+Two low-battery warnings: the **BATT** status-line symbol (also lit for a low printer battery) and,
+during execution, an ERROR code (see [PC-1600 Error Codes](PC-1600-Error-Codes.md)). The **Memory
+Safe Guard** does **not** hold memory when the batteries are dead or removed — internal RAM *and*
+memory modules are lost (program modules keep their own backup battery).
+
+To preserve data across a battery change:
+- **AC adapter method:** power off → connect the adapter (outlet first, then computer) → swap
+  batteries → unplug adapter → power on. Memory intact, no reset needed.
+- **Save method:** `SAVE` programs/data to disk, tape or RAM disk → replace batteries → ALL RESET
+  → `LOAD` back.
+
+Otherwise: replace batteries, then ALL RESET to initialise.
+
+### B. Replacing the RAM modules
+
+Two module types: **program modules** (battery-backed, contents survive removal, hot-swappable)
+and **memory modules** (not backed up — contents lost on removal).
+
+Installing a memory module shows `NEW 0?:CHECK` at power-on (the computer noticed the memory-size
+change). To clear all memory (internal + module): `CL`, set PRO mode, `MODE` if needed, then
+`NEW 0` `ENTER`. `NEW` in PRO mode does **not** clear RESERVE function-key strings — run `NEW` in
+RESERVE mode as well. Program modules stay independent of internal RAM until selected with
+`TITLE`. `MEM` reports free user memory (11834 bytes with no modules). Expansion text fills
+`S2:` → `S1:` → internal RAM.
+
+### C. Character code tables
+
+- **MODE 0** — a set close to the **IBM PC** character set: upper/lower case, digits, symbols,
+  plus graphic characters, Greek letters and international characters. Look up a code by column
+  header (high nibble) then row label (low nibble); e.g. `a` = `&61`. Any code can be shown with
+  `CHR$(<code>)`.
+- **International set** — codes `&80`–`&A8` map onto the alphabetic keys when the **KB II** button
+  is pressed (template supplied).
+- **MODE 1** — the set is trimmed for PC-1500 compatibility; codes `&27`, `&5B`–`&5F`, `&60`,
+  `&7B`–`&7F` differ from MODE 0 (notably `&5B` = √, `&5D` = π shown PC-1500-style).
+
+*(The manual's printed grid is not reproduced here — the OCR of it is unreliable. Consult
+Appendix C of the manual, or the PC-1500 character tables, for exact glyphs.)*
+
+### D. Memory maps
+
+- The PC-1600 addresses **8 banks (0–7)**. Banks **0–3** are RAM; banks **4–6** hold internal
+  system ROMs and peripheral memory (e.g. CE-1600P, CE-158, CE-150 ROMs); bank **7** is unused
+  but addressable. Two views exist: from the **Z-80A** main processor and from the **LH-5803**
+  sub-processor.
+- **Bank 0 internal RAM** (Z-80A view), `C000H`–`FFFFH`: header (`C000`), Reserve Program Area
+  (`C008`), Machine Program Area (allocatable, from `C0C5`), BASIC Program Area, Free Area,
+  Variables Area, Work Area (`F000`–`FFFF`). With no expansion modules the **user area is 11834
+  bytes**.
+- Machine-language area addresses are relative to top-of-memory 0; lower bound `197`, upper bound
+  set by `NEW <address>` (max 65535). `NEW 0` sets it to zero (→ MEM = 11834).
+- `STATUS 0/2/3/256/257/258` report the free-area bounds and banks; `259`/`260` the slot module
+  free space (see the `STATUS` dictionary entry).
+- Expansion RAM in slots occupies `8000H`–`FFFFH` of banks 1–3; a `CE-1600M` can be split between
+  program storage and free-area expansion.
+
+### E. Machine-language programs
+
+The PC-1600 can be programmed directly in **Z-80A** assembler. BASIC commands for machine code —
+some address the main Z-80A, some the **LH-5803** sub-processor:
+
+| Main Z-80A | LH-5803 sub-processor (PC-1500 set) |
+|-----------|-------------------------------------|
+| `CALL`, `PEEK`, `POKE`, `INP`, `OUT`, `BLOAD`, `BSAVE` | `XCALL` (= PC-1500 `CALL`), `XPEEK`/`XPEEK#` (= `PEEK`/`PEEK#`), `XPOKE`/`XPOKE#` (= `POKE`/`POKE#`), `CLOAD M`, `CSAVE M` |
+
+Allocate space with `NEW` (sets the lower address of the BASIC program area). System utilities and
+peripheral ROMs are reachable but need memory-map knowledge beyond the manual (Appendix D).
+
+### F. Error codes
+
+See **[PC-1600 Error Codes](PC-1600-Error-Codes.md)**.
+
+### G. BASIC command list
+
+Folded into the [dictionary index above](#14-basic-command-dictionary) and the
+[PC-1600 Command Dictionary](PC-1600-Command-Dictionary.md).
+
+### H. Compatibility with the PC-1500 model and peripherals
+
+PC-1500 BASIC generally runs on the PC-1600 in **MODE 1**. Most command names match; disk/RAM-disk
+and serial-interrupt commands are PC-1600-only. PC-1500 tape programs load and run unchanged.
+
+**Renamed commands** (PC-1600 → PC-1500):
+
+| PC-1600 | PC-1500 |
+|---------|---------|
+| `TAB` | `LCURSOR` |
+| `LLINE` | `LINE` |
+| `LINE` | *(no equivalent — screen line)* |
+| `XCALL` | `CALL` |
+| `CALL` | *(no equivalent — Z-80A)* |
+| `XPOKE` / `XPEEK` / `XPOKE#` / `XPEEK#` | `POKE` / `PEEK` / `POKE#` / `PEEK#` |
+| `POKE` / `PEEK` | *(no equivalent — Z-80A space)* |
+
+**Notes:**
+- `TIME = 0` cannot be set on the PC-1600 (many PC-1500 programs use it to reset a counter).
+- **Running a PC-1500 program:** fit a module (CE-151/155/159/161, < 16 KB) in a slot, `MODE 1`,
+  then `RUN`.
+- **Typing one in:** change every `LINE` to `LLINE`; add a comment line marking it as PC-1500.
+- **Tape:** PC-1500 CE-150 tapes load into the PC-1600 (MODE 1) unmodified; PC-1600 CE-1600P tapes
+  do **not** load on a PC-1500 (different tape format and memory allocation).
+- **Printing to the CE-1600P** like a CE-150: `CSIZE 2` · `PZONE "LPT1:",18` · `PCONSOLE "LPT1:",18,0,0`.
+  Listing a PC-1600 program via CE-150/CE-158/CE-162E prints PC-1600 command names as their PC-1500
+  equivalents (e.g. `LLIST` → `LIST`); `LCURSOR` from a PC-1500 tape lists as `-` on the CE-1600P
+  (replace with `TAB`).
+- **PC-1500A is *not* compatible:** its free user area `&7C00`–`&7FFF` is used by the PC-1600 system.
+- **Early PC-1500s:** `FOR…NEXT` leaves the counter 1 higher than the PC-1600, and `IF…THEN` treats
+  only `> 0` as true (PC-1600: `≠ 0`). Detect with `PEEK &C5C0` = 6.
+
+### I. Care & troubleshooting
+
+Keep the glass LCD in its case; avoid temperature/humidity extremes and direct sun; beware winter
+static (never touch module pins); clean with a dry cloth only; remove batteries before long
+storage; use an authorised service centre.
+
+| Symptom | Try |
+|---------|-----|
+| Powered on, screen blank | Press `ON` again; check the low-battery symbol; check the AC adapter; adjust the contrast dial |
+| Display OK, keys dead | `CL`; power off/on; press RESET alone (simple reset); `CL` + RESET (ALL RESET) |
+| Calculation shows as a BASIC line with `:` after the first number | Press `MODE` to switch PRO → RUN |
+
+### J. Specifications
+
+| | |
+|--|--|
+| Main CPU | SC7852 — Z-80A-compatible CMOS, 3.58 MHz |
+| Slave CPU | LH5803 — PC-1500 compatible, 1.3 MHz |
+| Sub CPU | LU57813P — 307.2 kHz |
+| Display | LCD, adjustable contrast; 26 × 4 characters; 156 × 32 dot graphics |
+| Keyboard | 63 alphanumeric + 6 function keys |
+| ROM | 96 KB |
+| RAM | 16 KB, expandable to 80 KB; user area 11834 bytes; 2 rear expansion slots |
+| Interfaces | RS-232C serial, optical serial, analog input |
+| Features | Low-battery display, real-time clock, alarm / auto power on-off, external interrupts, comms |
+| Power | 6 V DC — 4 × AA (SUM-3 / R6), or AC adapter EA-160 / EA-150; 0.48 W |
+| Battery life | ≈ 25 h at 20 °C (10 min processing + 50 min display per hour) |
+| Dimensions | 195 × 86 × 25.5 mm |
+| Weight | ≈ 390 g with batteries |
+| Operating temp | 0–40 °C |
+
+### K. Syntax diagrams
+
+Present only in the German *Bedienungsanleitung* (Appendix K, "Syntax-Diagramme"); not in the
+English manual.
 
 ---
 
