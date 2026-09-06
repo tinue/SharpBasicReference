@@ -139,3 +139,250 @@ as illustrative.
 ```
 >BSAVE"S1:SORT",#1,&8000,&8AFF
 ```
+
+---
+
+## C
+
+### CALL
+- **Format:** `CALL [#<bank>,]<address>[,<variable>]` — **Abbr.** `CA.` — **See also:** NEW, POKE, XPOKE
+- **Purpose:** Call a machine-language routine (Z-80A / PC-1600 address space) from BASIC.
+- **Remarks:** `<bank>` 0–7 (default 0), `<address>` `&0`–`&FFFF`. One `<variable>` is passed both ways: a numeric value (integer −32768..32767) goes in the **DE** register pair and comes back as a BCD value in the same variable if the carry flag is set on exit; for a string variable, **DE** = start address of the string, **B** = its length. The routine must already be in memory (`POKE` / `XPOKE`). See Appendix D. (PC-1500's `CALL` is `XCALL` here.)
+
+```
+400:CALL #3,&8000,X
+410:PRINT "THE VALUE OF X RETURNED IS ";X
+```
+
+### CHAIN  **(MODE 1)**
+- **Format:** `CHAIN` | `CHAIN ["<filename>"][,<line#>]` — **Abbr.** `CHA.` — **See also:** CSAVE, MERGE
+- **Purpose:** Load and run another BASIC program from **cassette** (PC-1500 mode). `CHAIN` runs the first program on tape from its first line; `CHAIN ,<line#>` from that line; `CHAIN "name"` searches for the named program. Lets an over-large program be split into sequential parts. Errors if a `PASS` password is set.
+
+### CHR$
+- **Format:** `CHR$(<integer expression>)` — **Abbr.** `CH.` — **See also:** ASC
+- **Purpose:** The character whose code is `<integer expression>`. Used to emit control codes to a printer / serial port or non-keyboard graphics characters. See Appendix C.
+
+```
+10:FOR X=33 TO 126:PRINT CHR$(X);:NEXT X
+```
+
+### CLEAR
+- **Format:** `CLEAR` — **Abbr.** `CL.` — **See also:** DIM, ERASE, TITLE
+- **Purpose:** Erase **all** variables — including the fixed `A`–`Z`, `A$`–`Z$`, `@()` — resetting numbers to 0 and strings to null. Usable mid-program to reclaim variable space, or at the start when several programs share memory. (`ERASE` clears only simple/array variables.)
+
+### CLOAD  **(MODE 1)**
+- **Format:** `CLOAD ["<filename>"][,A]` — **Abbr.** `CLO.` — **See also:** CSAVE, CLOAD?, MERGE
+- **Purpose:** Load a BASIC program from **cassette** in PC-1500 mode (CE-150 / CE-162E; not the CE-1600P). `CLOAD` loads the next program on tape; `CLOAD "name"` searches for it. In RESERVE mode it loads a function-key string set. Errors if a password is set.
+
+### CLOAD?  **(MODE 1)**
+- **Format:** `CLOAD? ["<filename>"]` — **Abbr.** `CLO.?`
+- **Purpose:** Verify a tape program against the copy in memory (PC-1500 mode); mismatch → **ERROR 43**.
+
+### CLOAD M  **(MODE 1)**
+- **Format:** `CLOAD M ["<filename>"][,#<bank>,<address>]` — **Abbr.** `CLO. M` — **See also:** BLOAD, CALL, CSAVE M, NEW
+- **Purpose:** Load a machine-language program from cassette (PC-1500 mode) — a different memory area and tape format from `CLOAD`. `<bank>` 0–7, `<address>` hex; omit both to reload where it was saved from. If saved (by `CSAVE M`) with an auto-start address, it loads and runs from there.
+
+### CLOSE
+- **Format:** `CLOSE` | `CLOSE #<file#>[,#<file#>…]` — **Abbr.** `CLOS.` — **See also:** END, OPEN
+- **Purpose:** Close files on the current device. `CLOSE` alone closes all open files. A file must be closed before reopening in another mode (reopening an open file → error). `END`, `NEW`, `RUN`, `LOAD`, editing, and power-off all close every file automatically.
+
+### CLS
+- **Format:** `CLS` — **Purpose:** Clear the whole screen; cursor to home `(0,0)` (MODE 0).
+
+### COLOR
+- **Format:** `COLOR <number>` — **Abbr.** `COL.`
+- **Purpose:** Printer pen colour: `0` black, `1` blue, `2` green, `3` red. Default at power-on `0`.
+
+### COM$  **(PC-1600)**
+- **Format:** `COM$ "COMn:"` — **Abbr.** `COM.` — **See also:** SETCOM
+- **Purpose:** String of the communication parameters set by the last `SETCOM` for that port, in `SETCOM` order (`<BR>,<WL>,<PR>,<ST>,<XO>,<SI>`). `"COM:"` = currently opened port.
+
+```
+10:SETCOM "COM1:",300,8,N,1,X,S
+20:PRINT COM$"COM1:"
+```
+
+### COMn ON / OFF / STOP  **(PC-1600)**
+- **Format:** `COMn ON` | `COMn OFF` | `COMn STOP` — **See also:** ON COMn GOSUB, SETCOM
+- **Purpose:** Enable/disable interrupts from port `n` (`1` = RS-232C, `2` = optical). `ON` + `ON COMn GOSUB` to branch; `OFF` ignores; `STOP` ignores but latches the last request for a later `ON`. **Default STOP.**
+
+### CONT
+- **Format:** `CONT` — **Abbr.** `C.` — **See also:** RESUME, RUN, STOP, WAIT
+- **Purpose:** Resume after `STOP`, a paused `PRINT`, or BREAK — provided the program was not edited (`GOTO <line#>` to resume elsewhere). Does **not** resume after `END` or an error (use `RESUME`).
+
+### COPY  **(PC-1600)**
+- **Format:** `COPY "<d1:name1.ext>" TO "<[d2:]name2.ext>"` — **Abbr.** `COP.` — **See also:** SET
+- **Purpose:** Copy a file between devices. The extension must always be given. If `d2:` is omitted the source device is used; fails if `name2` already exists on the destination. Also used to rename the floppy drive (`X:` ↔ `Y:`) for single-drive disk-to-disk backup (see Chapter 6). Tape/serial ports cannot be copy destinations for disk sources and vice-versa in some combinations (manual has the full matrix).
+
+```
+>COPY"S1:RICH.BAS" TO "S2:RICH.BAS"
+>COPY"X:HAC.BAS" TO "HACOPY.BAS"
+```
+
+### COS
+- **Format:** `COS(<X>)` — **See also:** ACS, SIN, TAN
+- **Purpose:** Cosine of `X`; unit per `DEGREE` / `RADIAN` / `GRAD`.
+
+### CSAVE  **(MODE 1)**
+- **Format:** `CSAVE ["<filename>"][,A][;<line#>[,<line#>]]` — **Abbr.** `CS.` — **See also:** CLOAD, CLOAD?, LLIST, MERGE
+- **Purpose:** Save a program (or line range, as `LLIST`) to cassette in PC-1500 mode. In RESERVE mode saves the function-key string set. `,A` = ASCII format (else binary). Blocked by a `PASS` password. **Not** usable with the CE-1600P — only the CE-150 / CE-162E.
+
+```
+>CSAVE"PROG01";200,380
+```
+
+### CSAVE M  **(MODE 1)**
+- **Format:** `CSAVE M "<filename>";#<bank>,<start address>,<end address>[,<auto-start address>]` — **Abbr.** `CS. M` — **See also:** CLOAD M, CALL, BSAVE
+- **Purpose:** Save a machine-language program to cassette (PC-1500 mode). Bank/address range stored with the file; `CLOAD M` reads them back if not given. `<auto-start address>` default `&FFFF` = off.
+
+### CSIZE
+- **Format:** `CSIZE <size>` — **Abbr.** `CSI.` — **See also:** PCONSOLE
+- **Purpose:** Printer character size 1–9:
+
+| size | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|------|---|---|---|---|---|---|---|---|---|
+| chars/line | 160 | 80 | 53 | 40 | 32 | 26 | 22 | 20 | 17 |
+| height mm | 1.2 | 2.4 | 3.6 | 4.8 | 6.0 | 7.2 | 8.4 | 9.6 | 10.8 |
+| width mm | 0.8 | 1.6 | 2.4 | 3.2 | 4.0 | 4.8 | 5.6 | 6.4 | 7.2 |
+
+  chars/line values assume `PCONSOLE` `<length>=0` (infinite). `LLIST` resets any size > 2 back to 2.
+
+### CURSOR
+- **Format:** `CURSOR <column>[,<line>]` — **Abbr.** `CU.` — **See also:** PRINT
+- **Purpose:** Move the cursor to `<column>` 0–25, `<line>` 0–3 (default: current line).
+
+```
+40:CURSOR 12,1
+50:PRINT A$
+```
+
+---
+
+## D
+
+### DATA
+- **Format:** `DATA <list of constants>` — **Abbr.** `DA.` — **See also:** READ, RESTORE
+- **Purpose:** Supply constants for `READ`. Numeric or quoted-string constants, comma-separated. Non-executable — place anywhere; read in line-number order; `RESTORE` to re-read.
+
+```
+10:FOR J=1 TO 4:READ A$,B:PRINT A$,B:NEXT J
+60:DATA "MICHAEL",23,"DAVID",38,"WENDY",-24,"BRIAN",34
+```
+
+### DATE$  **(PC-1600)**
+- **Format:** `DATE$ = "MM/DD"` | `DATE$` — **Abbr.** `DATE.` — **See also:** TIME$, ALARM$
+- **Purpose:** Real-time-clock date. As a statement, sets it (`MM` 01–12, `DD` 01–31). As a value, returns `MM/DD`. The day advances when `TIME$` rolls `23:59:59` → `00:00:00`.
+
+```
+>DATE$="12/25"
+450:PRINT "TODAY'S DATE IS ";DATE$
+```
+
+### DEG
+- **Format:** `DEG <dd.mmssrr>` — **See also:** DMS
+- **Purpose:** Convert an angle given as `dd.mmssrr` (degrees `.` minutes `ss` seconds `rr` hundredths; `mm`,`ss` 00–59) to decimal degrees (10 significant digits).
+
+```
+10:X=DEG 50.300000 : PRINT X     → 50.5
+```
+
+### DEGREE
+- **Format:** `DEGREE` — **Abbr.** `DE.` — **See also:** RADIAN, GRAD
+- **Purpose:** Set the angular unit to degrees (default at power-on).
+
+### DELETE
+- **Format:** `DELETE <line#>` | `DELETE <line#>,` | `DELETE <line#>,<line#>` | `DELETE ,<line#>` — **Abbr.** `DEL.` — **See also:** NEW
+- **Purpose:** Delete program lines: one line; from a line to the end; an inclusive range; or from the start up to a line. Whole program → `NEW`.
+
+### DIM
+- **Format:** `DIM <name>(<size>)` · `DIM <name$>(<size>)[*<length>]` · `DIM <name>(<rows>,<cols>)` · `DIM <name$>(<rows>,<cols>)[*<length>]` — **Abbr.** `D.` — **See also:** CLEAR, ERASE
+- **Purpose:** Reserve storage for arrays (and 1-D "simple" subscripted variables). All except `A`–`Z`, `A$`–`Z$`, `@()`, `@$()` must be dimensioned before use.
+- **Remarks:** Subscripts 0–255; a subscript starts at **0**, so `DIM A(2,3)` = 3 rows × 4 cols = 12 elements. `*<length>` (string element length) 1–80, default 16. Cannot re-dimension until `CLEAR` / `NEW` / `RUN` / `ERASE`. Numeric elements start at 0, string elements at null. Errors: undeclared array use, re-declaration, subscript over the DIM value.
+
+```
+10:DIM C(13)          'numeric, 14 elements
+20:DIM F$(10)         'string, 11 elements
+30:DIM H(4,6)         '5x7 numeric, 35 elements
+40:DIM B$(7,5)*25     '8x6 string, 25 chars each
+```
+
+### DMS
+- **Format:** `DMS <angle>` — **Abbr.** `DM.` — **See also:** DEG
+- **Purpose:** Convert decimal degrees (`dd.` with a decimal point) to `dd.mmssrr` (deg/min/sec/hundredths).
+
+```
+10:X=DMS 50.5 : PRINT X     → 50.3
+```
+
+### DSKF  **(PC-1600)**
+- **Format:** `DSKF "d:"` — **Abbr.** `DS.`
+- **Purpose:** Free space in bytes on `S1:`, `S2:`, `X:` or `Y:`.
+
+### DEV$  **(PC-1600)**
+- **Format:** `DEV$` — **See also:** SETDEV
+- **Purpose:** String showing the current `SETDEV` output-routing settings.
+
+---
+
+## E
+
+### END
+- **Format:** `END` — **Abbr.** `E.` — **See also:** STOP
+- **Purpose:** Stop the program, close all files and the serial interface. Need not be the last line — place it before subroutine blocks so execution does not fall through. If omitted, the program ends when it runs out of lines (files still closed).
+
+### EOF  **(PC-1600)**
+- **Format:** `EOF(<file#>)` — **Abbr.** `EO.`
+- **Purpose:** `1` if the end of the sequential input file `<file#>` has been reached, else `0`.
+
+```
+10:IF EOF(1) THEN 100
+```
+
+### ERASE
+- **Format:** `ERASE <list of variable names>` — **Abbr.** `ERA.` — **See also:** CLEAR
+- **Purpose:** Erase the named simple/array variables (not the fixed `A`–`Z` / `A$`–`Z$` / `@()`). An array is named with empty parentheses: `Z$()`; elements cannot be erased individually.
+
+```
+10:ERASE AB,Z$()
+```
+
+### ERL
+- **Format:** `ERL` — **See also:** ERN, ON ERROR GOTO, RESUME
+- **Purpose:** Line number where the last error occurred (set only for errors during program execution).
+
+### ERN
+- **Format:** `ERN` — **See also:** ERL, ON ERROR GOTO, RESUME
+- **Purpose:** Error code of the last execution error.
+
+```
+10:ON ERROR GOTO 100
+...
+100:IF ERL=30 AND ERN=4 THEN PRINT "YOU HAVEN'T GOT A DATA LINE"
+110:STOP
+```
+
+### EXP
+- **Format:** `EXP(<X>)` — **Abbr.** `EX.` — **See also:** LN
+- **Purpose:** eˣ (e held as 2.718281828). `X` must be `-227.9559242 … +230.2585092`; below that returns 0. For other bases use `^`.
+
+```
+>PRINT EXP(10)     → 22026.46579
+```
+
+---
+
+## F
+
+### FILES  **(PC-1600)**
+- **Format:** `FILES "<d:>"` | `FILES "<d:filename>"` | `FILES "<d:ambiguous filename>"` — **Abbr.** `FI.` — **See also:** LFILES, SET
+- **Purpose:** Show floppy / RAM-disk directory entries (name, `.BAS`, `P` protection, date, time) on screen.
+- **Remarks:** No name → all files, one entry at a time (**↓** to scroll, any other key aborts except SHIFT/DEF/RCL/SML). Single name → that file. Wildcards: `*` = any run of characters (incl. none), `?` = one character.
+
+```
+>FILES"X:"
+>FILES"S2:???1"
+```
+
+### FOR … NEXT
+- **Format:** `FOR <counter> = <initial> TO <final> [STEP <increment>]` … `NEXT <counter>` — **Abbr.** `F.` / `N.`
+- **Purpose:** Repeat the lines between `FOR` and `NEXT`. `<final>` and `<increment>` are numeric (−32768..32767 as integers in format 1, or any expressions in format 2). Loops may nest; `NEXT` may list its counter. After a normal exit the counter holds `<final> + <increment>` (see the PC-1500A compatibility note in the reference).

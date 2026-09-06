@@ -229,3 +229,51 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 - [BLOAD](PC-1600-Command-Dictionary.md#bload)
 - [BREAK ON / OFF](PC-1600-Command-Dictionary.md#break-on--off)
 - [BSAVE](PC-1600-Command-Dictionary.md#bsave)
+
+### C
+
+- [CALL](PC-1600-Command-Dictionary.md#call)
+- [CHAIN](PC-1600-Command-Dictionary.md#chain)
+- [CHR$](PC-1600-Command-Dictionary.md#chr)
+- [CLEAR](PC-1600-Command-Dictionary.md#clear)
+- [CLOAD](PC-1600-Command-Dictionary.md#cload)
+- [CLOAD?](PC-1600-Command-Dictionary.md#cload-1)
+- [CLOAD M](PC-1600-Command-Dictionary.md#cload-m)
+- [CLOSE](PC-1600-Command-Dictionary.md#close)
+- [CLS](PC-1600-Command-Dictionary.md#cls)
+- [COLOR](PC-1600-Command-Dictionary.md#color)
+- [COM$](PC-1600-Command-Dictionary.md#com)
+- [COMn ON / OFF / STOP](PC-1600-Command-Dictionary.md#comn-on--off--stop)
+- [CONT](PC-1600-Command-Dictionary.md#cont)
+- [COPY](PC-1600-Command-Dictionary.md#copy)
+- [COS](PC-1600-Command-Dictionary.md#cos)
+- [CSAVE](PC-1600-Command-Dictionary.md#csave)
+- [CSAVE M](PC-1600-Command-Dictionary.md#csave-m)
+- [CSIZE](PC-1600-Command-Dictionary.md#csize)
+- [CURSOR](PC-1600-Command-Dictionary.md#cursor)
+
+### D
+
+- [DATA](PC-1600-Command-Dictionary.md#data)
+- [DATE$](PC-1600-Command-Dictionary.md#date)
+- [DEG](PC-1600-Command-Dictionary.md#deg)
+- [DEGREE](PC-1600-Command-Dictionary.md#degree)
+- [DELETE](PC-1600-Command-Dictionary.md#delete)
+- [DEV$](PC-1600-Command-Dictionary.md#dev)
+- [DIM](PC-1600-Command-Dictionary.md#dim)
+- [DMS](PC-1600-Command-Dictionary.md#dms)
+- [DSKF](PC-1600-Command-Dictionary.md#dskf)
+
+### E
+
+- [END](PC-1600-Command-Dictionary.md#end)
+- [EOF](PC-1600-Command-Dictionary.md#eof)
+- [ERASE](PC-1600-Command-Dictionary.md#erase)
+- [ERL](PC-1600-Command-Dictionary.md#erl)
+- [ERN](PC-1600-Command-Dictionary.md#ern)
+- [EXP](PC-1600-Command-Dictionary.md#exp)
+
+### F
+
+- [FILES](PC-1600-Command-Dictionary.md#files)
+- [FOR … NEXT](PC-1600-Command-Dictionary.md#for--next)
