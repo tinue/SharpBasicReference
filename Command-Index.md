@@ -375,3 +375,19 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 - [PRINT# / PRINT# USING](PC-1600-Command-Dictionary.md#print--print-using)
 - [PRINT USING / USING](PC-1600-Command-Dictionary.md#print-using--using)
 - [PSET](PC-1600-Command-Dictionary.md#pset)
+- [PZONE](PC-1600-Command-Dictionary.md#pzone)
+
+### R
+
+- [RADIAN](PC-1600-Command-Dictionary.md#radian)
+- [RANDOM](PC-1600-Command-Dictionary.md#random)
+- [RCVSTAT](PC-1600-Command-Dictionary.md#rcvstat)
+- [READ … DATA](PC-1600-Command-Dictionary.md#read--data)
+- [REM / '](PC-1600-Command-Dictionary.md#rem---)
+- [RENUM](PC-1600-Command-Dictionary.md#renum)
+- [RESTORE](PC-1600-Command-Dictionary.md#restore)
+- [RESUME](PC-1600-Command-Dictionary.md#resume)
+- [RETI](PC-1600-Command-Dictionary.md#reti)
+- [RIGHT$](PC-1600-Command-Dictionary.md#right)
+- [RLINE](PC-1600-Command-Dictionary.md#rline)
+- [RMT ON / OFF](PC-1600-Command-Dictionary.md#rmt-on--off)

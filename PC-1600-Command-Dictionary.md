@@ -825,3 +825,88 @@ GPRINT "102812F0122810"
 ### PSET
 - **Format:** `PSET(<X>,<Y>)[,<function code>]` — **Abbr.** `PS.` — **See also:** PRESET, LINE
 - **Purpose:** Turn **on** the screen dot at `(X,Y)` (0–155 × 0–31). Function code `X` = invert the dot instead. Wider coordinates accepted, no effect off-screen.
+
+### PZONE  **(PC-1600)**
+- **Format:** `PZONE "COMn:",<width>` | `PZONE "LPT1:",<width>` — **Abbr.** `PZ.` — **See also:** LPRINT
+- **Purpose:** Width of the comma-delimited print zones for `LPRINT` to the printer (`LPT1:`, width 8–80) or a serial port (`COMn:`, width 8–255). Numbers right-justified, strings left-justified in each zone. Default 20.
+
+```
+40:PZONE "LPT1:",10
+50:LPRINT A,B,C
+```
+
+---
+
+## R
+
+### RADIAN
+- **Format:** `RADIAN` — **Abbr.** `RAD.` — **See also:** DEGREE, GRAD
+- **Purpose:** Set the angular unit to radians (`RADIAN` on the status line).
+
+### RANDOM
+- **Format:** `RANDOM` — **Abbr.** `RA.` — **See also:** RND
+- **Purpose:** Reseed `RND` so a different sequence is produced from each power-on. Put at the start of a program.
+
+### RCVSTAT  **(PC-1600)**
+- **Format:** `RCVSTAT "COMn:",<protocol>[,<timeout>]` — **Abbr.** `RC.` — **See also:** INSTAT, SNDSTAT
+- **Purpose:** RS-232C receive handshake and serial timeout. `<protocol>` is an 8-bit value; bit 3 = CTS must be high, bit 4 = CD must be high, bit 5 = DSR must be high (bit = 0 means "must be high", 1 means "don't care"); bits 1,2,6,7,8 unused (set 0). No meaning for the optical port. `<timeout>` 0–255 in 0.5 s units; `0` = infinite (default).
+
+### READ … DATA
+- **Format:** `READ <list of variables>` … `DATA <list of constants>` — **Abbr.** `REA.` / `DA.` — **See also:** DATA, RESTORE
+- **Purpose:** Assign successive `DATA` constants to the `READ` variables (types must match). Too many variables → error; extra constants stay unread; re-read with `RESTORE`. On first execution with no preceding `RESTORE`, the search order for the first `DATA` is `S2:` → `S1:` → `S0:`. After a `GOTO`/`DEF` restart following a `READ`, the next `READ` continues at the next `DATA` line.
+
+```
+10:DIM B(10)
+20:FOR I=1 TO 10:READ B(I):PRINT B(I):NEXT I
+60:DATA 10,20,30,40,50
+70:DATA 60,70,80,90,100
+```
+
+### REM  /  '
+- **Format:** `REM <remark>` | `'<remark>` — **See also:** LIST, LLIST
+- **Purpose:** Comment; ignored at run time, shown by `LIST`. An apostrophe replaces `REM`. A jump to a `REM` line resumes at the next executable line. Append with `:REM …`; nothing may follow `REM` on the line.
+
+```
+20:DIM A$(3,5):REM RESERVING SPACE FOR A 3 X 5 ARRAY
+30:'THIS LINE HAS NO EFFECT EITHER
+```
+
+### RENUM
+- **Format:** `RENUM [<new line#>][,<old line#>][,<increment>]` — **Abbr.** `REN.` — **See also:** DELETE, LIST
+- **Purpose:** Renumber from `<old line#>` onward to start at `<new line#>` (default 10) in `<increment>` (default 10). Results > 65279 → error. `GOTO`/`GOSUB`/etc. targets are updated; a missing target aborts the renumber with `undefined in <line#>`; a computed `GOTO A*5` aborts with an error. Cannot renumber a program loaded in MODE 1 — save it ASCII (`,A`) and reload in MODE 0.
+
+### RESTORE
+- **Format:** `RESTORE` | `RESTORE <line#/label>` — **Abbr.** `RES.` — **See also:** READ, DATA
+- **Purpose:** Reset the `DATA` read pointer to the first item of the first (or specified) `DATA` line — if that line has no `DATA`, to the first `DATA` line after it.
+
+```
+60:RESTORE     'lets the same DATA be READ again
+```
+
+### RESUME
+- **Format:** `RESUME [<line#>]` | `RESUME NEXT` — **Abbr.** `RESU.` — **See also:** ON ERROR GOTO, ERL, ERN
+- **Purpose:** Leave an error handler and continue: `RESUME` at the statement that erred, `RESUME <line#>` at a given line, `RESUME NEXT` at the line after the error. Only valid inside an error-processing routine.
+
+### RETI  **(PC-1600)**
+- **Format:** `RETI` — **See also:** ON ADIN GOSUB, ON COMn GOSUB, ON KEY GOSUB, ON PHONE GOSUB, ON TIME$ GOSUB
+- **Purpose:** Return from an **interrupt** subroutine (the `ON … GOSUB` family). Like `RETURN`, but on execution it also services the last interrupt that arrived while the handler was running.
+
+### RIGHT$
+- **Format:** `RIGHT$(<X$>,<N>)` — **Abbr.** `RI.` — **See also:** LEFT$, MID$
+- **Purpose:** Rightmost `N` characters of `X$` (`N` 0–80, truncated; `<1` → null; over the length → whole string).
+
+### RLINE
+- **Format:** `RLINE [(X1,Y1)]-(X2,Y2)[-(X3,Y3)…][,<type>][,<color>][,B]` — **Abbr.** `RL.` — **See also:** COLOR, LLINE
+- **Purpose:** Like `LLINE`, but printer coordinates are **relative** — each point is measured from the previous point as origin. Up to five further segments. `<type>` 0–9, `<color>` 0–3 (defaults = current). `B` = rectangle on the `(X1,Y1)`–`(X2,Y2)` diagonal.
+
+```
+ 5:PAPER R
+10:GRAPH
+20:GLCURSOR (40,40)
+30:RLINE -(100,0)-(-100,100)-(0,-100)
+40:TEXT
+```
+
+### RMT ON / OFF
+- **Format:** `RMT ON` | `RMT OFF` — **Abbr.** `RM.`
+- **Purpose:** Enable / disable the computer's remote-control of cassette-recorder power during tape I/O.
