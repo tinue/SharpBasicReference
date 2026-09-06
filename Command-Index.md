@@ -221,3 +221,11 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 - [ASN](PC-1600-Command-Dictionary.md#asn)
 - [ATN](PC-1600-Command-Dictionary.md#atn)
 - [AUTO](PC-1600-Command-Dictionary.md#auto)
+
+### B
+
+- [BEEP](PC-1600-Command-Dictionary.md#beep)
+- [BEEP ON / OFF](PC-1600-Command-Dictionary.md#beep-on--off)
+- [BLOAD](PC-1600-Command-Dictionary.md#bload)
+- [BREAK ON / OFF](PC-1600-Command-Dictionary.md#break-on--off)
+- [BSAVE](PC-1600-Command-Dictionary.md#bsave)
