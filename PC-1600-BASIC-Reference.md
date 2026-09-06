@@ -940,6 +940,50 @@ English manual.
 
 ---
 
+## Internal data representation
+
+*From the* PC-1600 Systemhandbuch *(Holtkötter), chapter 4 — firmware detail, not in the Operation
+Manual. Addresses are as seen from the SC-7852 (Z-80).*
+
+### Arithmetic registers
+
+IOCS arithmetic routines take their operands in seven 8-byte registers in the BASIC work area
+(operand normally in **X**):
+
+| Reg | Address | Reg | Address |
+|-----|---------|-----|---------|
+| X | `FA00H`–`FA07H` | U | `FA18H`–`FA1FH` |
+| Z | `FA08H`–`FA0FH` | V | `FA20H`–`FA27H` |
+| Y | `FA10H`–`FA17H` | W | `FA28H`–`FA2FH` |
+| | | S | `FA30H`–`FA37H` |
+
+### Numeric value — decimal (BCD) form
+
+8 bytes: exponent, mantissa sign, then the BCD mantissa. Covers ±9.999999999×10⁹⁹.
+
+- **Byte 0 — exponent:** a signed binary byte (negative as two's complement).
+- **Byte 1 — mantissa sign:** `00H` = `+`, `80H` = `-`.
+- **Bytes 2–6 — mantissa:** 10 BCD digits. Byte 7 = `00H`.
+
+`123` (= 1.23×10²) in X: `02 00 12 30 00 00 00 00`.
+`-0.0123` (= -1.23×10⁻²) in Y: `FE 80 12 30 00 00 00 00`.
+
+### Numeric value — binary form
+
+8 bytes (5 unused); covers −32768…32767. Bytes 4 = `B2H` tag, bytes 5–6 = the 16-bit value
+(high, low), rest ignored.
+
+`123` (`007BH`) in X: `00 00 00 00 B2 00 7B 00`.
+`-123` (`FF85H`) in Y: `00 00 00 00 B2 FF 85 00`.
+
+### String descriptor
+
+8 bytes (4 unused): a length byte (`01H`–`50H`, i.e. max 80 chars), then the start address as
+`ADDH ADDL` — **with the MSB of `ADDH` inverted** (start `FB10H` is stored as `7B 10`). The
+descriptor points at where the actual character data lives.
+
+---
+
 ## See also
 - [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md)
 - [CE-150 Reference](CE-150-Reference.md) · [CE-158 Reference](CE-158-Reference.md)
