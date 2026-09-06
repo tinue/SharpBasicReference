@@ -631,3 +631,114 @@ GPRINT "102812F0122810"
 ### MEM
 - **Format:** `MEM` — **Abbr.** `M.` — **See also:** STATUS
 - **Purpose:** Unused user-area memory in bytes, including the variable area (= `STATUS 0`).
+
+### MERGE  **(MODE 1)**
+- **Format:** `MERGE` | `MERGE "<filename>"` — **Abbr.** `MER.` — **See also:** CLOAD
+- **Purpose:** Load a cassette program alongside the one in memory (PC-1500 mode). `MERGE` alone takes the next tape program; `"filename"` searches for it.
+- **Remarks:** Merged programs keep their own line numbers in separate memory areas; move between them only with `GOTO "label"` / `LIST "label"` (plain `LIST` shows only the last-merged program), so give every merged program a first-line label. With `READ`/`DATA`, label the `DATA` line and put `RESTORE "label"` before the `READ`.
+
+### MID$
+- **Format:** `MID$(<X$>,<N>,<M>)` — **Abbr.** `MI.` — **See also:** LEFT$, RIGHT$
+- **Purpose:** `M` characters of `X$` from position `N` (`N` 1–80, `M` 0–80; `N` out of range → null).
+
+```
+20:Y$=MID$(Z$,3,4)     'Z$="ABCDEFG" → "CDEF"
+```
+
+### MOD
+- **Format:** `<n> MOD <m>` — **See also:** INT
+- **Purpose:** Remainder of `n / m` (both rounded to nearest integer first).
+
+### MODE
+- **Format:** `MODE [0]` | `MODE 1` — **Abbr.** `MO.`
+- **Purpose:** Select the screen personality. **Direct mode only** — cannot appear on a program line.
+- **Remarks:** `MODE` / `MODE 0` — all four lines active, PC-1600 character set, CE-1600P and PC-1600 peripherals; `PRINT` fills lines then scrolls, wrapping > 26-char items. `MODE 1` — PC-1500 mode: only the bottom line active (scrolls only in PRO mode / for `INPUT`), 26-char fixed line, PC-1500 character set and peripherals; `PRINT` overwrites the bottom line and truncates > 26 chars. PC-1500 programs must run in MODE 1. After a mode change the screen is not cleared; the prompt/cursor go to home.
+
+### NAME  **(PC-1600)**
+- **Format:** `NAME "<d:oldname>" AS "<d:newname>"` — **Abbr.** `NA.` — **See also:** COPY, FILES
+- **Purpose:** Rename a file on floppy / RAM disk (same drive for both names; `newname` must be unused). Fails if the disk is write-protected, the file is `SET`-protected, the file is open, or the RAM module write-protect switch is on.
+
+### NEW
+- **Format:** `NEW` | `NEW "Sn:"[,<address>]` | `NEW <address>` | `NEW 0` — **See also:** DELETE, STATUS, TITLE
+- **Purpose:** Delete all program lines and/or allocate the machine-language program area. In RESERVE mode, clears all function-key assignments. Always use `NEW` before typing a replacement program so stray old lines are not left behind.
+- **Remarks:** Addresses are relative to top-of-memory 0; the machine-language area is `197`…`<address>`. `NEW` clears the `TITLE`-selected memory, keeping the current ML allocation. `NEW "Sn:"` targets a specific area (`S0:` main, `S1:`/`S2:` slot modules). `NEW "Sn:",<address>` also sets the ML upper address. `NEW 0` clears everything and sets the ML area to 0 (address 197). MODE 1 forms (`NEW`, `NEW <address>`, `NEW 0`) act on the PC-1500 user area.
+
+```
+>NEW 1001     'reserve 197–1000 for machine language
+```
+
+### ON ADIN GOSUB  **(PC-1600)**
+- **Format:** `ON ADIN (<level1>,<level2>) GOSUB <line#/label>` — **Abbr.** `O. AD. GOS.` — **See also:** ADIN ON/OFF/STOP, AIN, RETI
+- **Purpose:** Branch when the analog input leaves the range `level1`…`level2` (`0 <= level1 < level2 <= 255`). Subroutine must end with `RETI`. Max 8 interrupts per program. Default after the statement is `ADIN STOP` unless `ADIN ON` follows.
+- **Note:** first execute `POKE &F12C,(PEEK &F12C) OR 1`.
+
+### ON COMn GOSUB  **(PC-1600)**
+- **Format:** `ON COMn GOSUB <line#/label>` — **Abbr.** `O. COM GOS.` — **See also:** COMn ON/OFF/STOP, RETI
+- **Purpose:** Branch on an interrupt at port `n` (`1` RS-232C, `2` optical). `RETI` to return; max 8 interrupts; default `COMn STOP` unless `COMn ON` follows.
+
+### ON ERROR GOTO
+- **Format:** `ON ERROR GOTO <line#/label>` — **Abbr.** `O. ER. G.` — **See also:** RESUME, ERL, ERN
+- **Purpose:** Divert errors to a handler (which must end with `RESUME`, `STOP` or `END`). An error inside the handler returns to `ON ERROR GOTO`, prints the code and stops. Any number allowed; the last executed one wins. `ON ERROR GOTO 0` restores normal handling. Released by `RUN` / `END` / ALL CLEAR, but **not** by starting with `GOTO` or `DEF`.
+
+```
+5:ON ERROR GOTO 100
+10:SAVE "X:DEMO"
+...
+100:IF ERN=160 THEN PRINT "NO DISK IN DRIVE X:"
+130:IF A$="Y" THEN RESUME
+140:STOP
+```
+
+### ON … GOSUB / ON … GOTO
+- **Format:** `ON <numeric expression> GOTO <list of line#s/labels>` | `ON <numeric expression> GOSUB <list…>` — **Abbr.** `O. G.` / `O. GOS.` — **See also:** GOSUB..RETURN, GOTO
+- **Purpose:** Jump to the *n*-th target in the list, where *n* is the (truncated) value of the expression. Out of range (`<1` or `>` list length) → fall through to the next line. For `ON…GOSUB` each target must start a subroutine.
+
+### ON KEY GOSUB  **(PC-1600)**
+- **Format:** `ON KEY GOSUB <list of line#s/labels>` — **Abbr.** `O. KEY GOS.` — **See also:** KEY ON/OFF/STOP, RETI
+- **Purpose:** Branch when F1–F6 is pressed while running — F1 → first target … F6 → sixth (extra items unused; missing items = no effect). Each subroutine ends with `RETI`. Cleared by `RUN` / `END`; default `KEY STOP` unless `KEY(n) ON` follows.
+
+### ON PHONE GOSUB  **(PC-1600)**
+- **Format:** `ON PHONE GOSUB <line#/label>` — **Abbr.** `O. PH. GOS.` — **See also:** PHONE ON/OFF/STOP, RETI
+- **Purpose:** Branch on a modem input on the RS-232C **CI** signal (pin 9). `RETI` to return; max 8 interrupts; default `PHONE STOP` unless `PHONE ON` follows.
+
+### ON TIME$ GOSUB  **(PC-1600)**
+- **Format:** `ON TIME$ = "MM/DD/HH/mm" GOSUB <line#/label>` — **Abbr.** `O. TI. GOS.` — **See also:** RETI, TIME$, TIME$ ON/OFF/STOP
+- **Purpose:** Branch when the real-time clock reaches the given time. `RETI` to return; max 8 interrupts; default `TIME$ STOP` unless `TIME$ ON` follows.
+
+### OPEN  **(PC-1600)**
+- **Format:** `OPEN "<d:filename>" FOR {INPUT|OUTPUT|APPEND} AS #<file#>` — **Abbr.** `OP.` — **See also:** CLOSE, INPUT#, MAXFILES, PRINT#
+- **Purpose:** Open a file and bind it to `<file#>` (1…`MAXFILES`). `INPUT` reads with `INPUT#`; `OUTPUT` writes a **new** file with `PRINT#` (overwrites any existing file of that name); `APPEND` adds to an existing file with `PRINT#`. A file cannot be open for input and output at once — close and reopen. Fails: `OUTPUT` on a `SET`-P file; write-protected floppy/RAM module; `APPEND` on `COM1:`/`COM2:`/`CAS:`.
+
+```
+ 5:MAXFILES=1
+10:OPEN "X:DATA" FOR OUTPUT AS #1
+30:PRINT #1,J
+50:CLOSE #1
+60:OPEN "X:DATA" FOR INPUT AS #1
+70:IF EOF(1) THEN 110
+80:INPUT #1,J
+```
+
+### OUT  **(PC-1600)**
+- **Format:** `OUT <port address>,<list of expressions>` — **See also:** INP
+- **Purpose:** Write bytes (values 0–255) directly to consecutive Z-80A output ports from `<port address>` (`&0`–`&FFFF`).
+
+```
+>OUT 80,187
+```
+
+### OUTSTAT  **(PC-1600)**
+- **Format:** `OUTSTAT "COM1:"[,<setting>]` — **Abbr.** `OU.` — **See also:** INSTAT
+- **Purpose:** Set RS-232C **RTS**/**DTR**: `<setting>` 0 = both high, 1 = RTS high/DTR low, 2 = RTS low/DTR high, 3 = both low. With no setting, both stay high during serial commands / while receiving and low otherwise; RTS drops low automatically when the receive buffer fills.
+
+### PAPER
+- **Format:** `PAPER <type>[,<limit from>][,<limit to>]` — **Abbr.** `PAP.` — **See also:** GRAPH, TEXT
+- **Purpose:** Printer paper type (`C` cut sheet, `R` roll; ALL RESET default `R`) and vertical print range in 0.2 mm units. `<limit from>` (reverse) 30–2047, default 30 (cut) / 999 (roll); `<limit to>` (forward) 30–2047, default 1354 (cut) / 999 (roll); in TEXT mode with roll paper `<limit to>` defaults to infinite. `TEXT`, `GRAPH`, `PAPER`, the printer feed key and power-on reset the limits from the current paper/pen position. In graphics mode, a pen move beyond the limits is reflected back at the limit.
+
+### PASS
+- **Format:** `PASS "<string>"` — **Abbr.** `PAS.` — **See also:** CLOAD, CSAVE
+- **Purpose:** Set/clear a program password (≤ 8 characters, any keyboard characters except `"`). While set, the machine stays in RUN mode: `LIST`, `LLIST`, `(C)SAVE`, `(C)LOAD`, `NEW`, `TITLE`, `MERGE`, `CHAIN` and the ↑/↓ keys are disabled, and lines can't be added/deleted. Protects **all** programs in memory. Remove by issuing `PASS` again with the same string; change by old then new. Needs a program in memory.
+
+### PAUSE
+- **Format:** `PAUSE [<list of expressions>][;]` | `PAUSE USING <format>;<list>` — **Abbr.** `PA.` — **See also:** PRINT, WAIT
+- **Purpose:** Like `PRINT`, but in MODE 1 the data shows for a fixed **0.85 s** then scrolls (≈ `WAIT` + `PRINT`). MODE 1 list max 2 items.

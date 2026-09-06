@@ -335,3 +335,31 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 
 - [MAXFILES](PC-1600-Command-Dictionary.md#maxfiles)
 - [MEM](PC-1600-Command-Dictionary.md#mem)
+- [MERGE](PC-1600-Command-Dictionary.md#merge)
+- [MID$](PC-1600-Command-Dictionary.md#mid)
+- [MOD](PC-1600-Command-Dictionary.md#mod)
+- [MODE](PC-1600-Command-Dictionary.md#mode)
+
+### N
+
+- [NAME](PC-1600-Command-Dictionary.md#name)
+- [NEW](PC-1600-Command-Dictionary.md#new)
+
+### O
+
+- [ON ADIN GOSUB](PC-1600-Command-Dictionary.md#on-adin-gosub)
+- [ON COMn GOSUB](PC-1600-Command-Dictionary.md#on-comn-gosub)
+- [ON ERROR GOTO](PC-1600-Command-Dictionary.md#on-error-goto)
+- [ON … GOSUB / ON … GOTO](PC-1600-Command-Dictionary.md#on--gosub--on--goto)
+- [ON KEY GOSUB](PC-1600-Command-Dictionary.md#on-key-gosub)
+- [ON PHONE GOSUB](PC-1600-Command-Dictionary.md#on-phone-gosub)
+- [ON TIME$ GOSUB](PC-1600-Command-Dictionary.md#on-time-gosub)
+- [OPEN](PC-1600-Command-Dictionary.md#open)
+- [OUT](PC-1600-Command-Dictionary.md#out)
+- [OUTSTAT](PC-1600-Command-Dictionary.md#outstat)
+
+### P
+
+- [PAPER](PC-1600-Command-Dictionary.md#paper)
+- [PASS](PC-1600-Command-Dictionary.md#pass)
+- [PAUSE](PC-1600-Command-Dictionary.md#pause)
