@@ -277,3 +277,34 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 
 - [FILES](PC-1600-Command-Dictionary.md#files)
 - [FOR … NEXT](PC-1600-Command-Dictionary.md#for--next)
+
+### G
+
+- [GCURSOR](PC-1600-Command-Dictionary.md#gcursor)
+- [GLCURSOR](PC-1600-Command-Dictionary.md#glcursor)
+- [GOSUB … RETURN](PC-1600-Command-Dictionary.md#gosub--return)
+- [GOTO](PC-1600-Command-Dictionary.md#goto)
+- [GPRINT](PC-1600-Command-Dictionary.md#gprint)
+- [GRAD](PC-1600-Command-Dictionary.md#grad)
+- [GRAPH](PC-1600-Command-Dictionary.md#graph)
+
+### H
+
+- [HEX$](PC-1600-Command-Dictionary.md#hex)
+
+### I
+
+- [IF … THEN … ELSE](PC-1600-Command-Dictionary.md#if--then--else)
+- [INIT](PC-1600-Command-Dictionary.md#init)
+- [INKEY$](PC-1600-Command-Dictionary.md#inkey)
+- [INP](PC-1600-Command-Dictionary.md#inp)
+- [INPUT](PC-1600-Command-Dictionary.md#input)
+- [INPUT#](PC-1600-Command-Dictionary.md#input-1)
+- [INSTAT](PC-1600-Command-Dictionary.md#instat)
+- [INSTR](PC-1600-Command-Dictionary.md#instr)
+- [INT](PC-1600-Command-Dictionary.md#int)
+
+### K
+
+- [KBUFF$](PC-1600-Command-Dictionary.md#kbuff)
+- [KEY ON / OFF / STOP](PC-1600-Command-Dictionary.md#key-on--off--stop)

@@ -386,3 +386,136 @@ as illustrative.
 ### FOR … NEXT
 - **Format:** `FOR <counter> = <initial> TO <final> [STEP <increment>]` … `NEXT <counter>` — **Abbr.** `F.` / `N.`
 - **Purpose:** Repeat the lines between `FOR` and `NEXT`. `<final>` and `<increment>` are numeric (−32768..32767 as integers in format 1, or any expressions in format 2). Loops may nest; `NEXT` may list its counter. After a normal exit the counter holds `<final> + <increment>` (see the PC-1500A compatibility note in the reference).
+
+---
+
+## G
+
+### GCURSOR
+- **Format:** `GCURSOR <X>[,<Y>]` — **Abbr.** `GC.` — **See also:** GPRINT
+- **Purpose:** Position the graphics cursor at dot `(X,Y)` for a following `GPRINT`. Normal range X `0–155`, Y `0–31` (any value −32768..32767 accepted, off-screen just not visible). Y omitted = current Y. In MODE 1 the Y parameter is meaningless — do not give it.
+
+### GLCURSOR
+- **Format:** `GLCURSOR (<X>,<Y>)` — **Abbr.** `GL.` — **See also:** LCURSOR
+- **Purpose:** In printer graphics mode, move the pen (lifted) to graphics coordinate `X,Y`, measured from the current origin, range −2048..2047.
+
+### GOSUB … RETURN
+- **Format:** `GOSUB <line#/label>` … `RETURN` — **Abbr.** `GOS.` / `RE.` — **See also:** GOTO, ON..GOSUB
+- **Purpose:** Call / return from a subroutine. `GOSUB` remembers the return point; the subroutine ends with `RETURN`, which resumes after the `GOSUB`. Subroutines may be called repeatedly and nested.
+
+### GOTO
+- **Format:** `GOTO <line#/label>` — **Abbr.** `G.` — **See also:** GOSUB..RETURN, ON..GOTO
+- **Purpose:** Unconditional jump (no return memory). If the target line is non-executable (`DATA`, `REM`) execution starts at the next executable line; a non-existent line → error. `GOTO` alone restarts from the first line; `GOTO <line#>` also resumes after a BREAK (cf. `CONT`).
+
+### GPRINT
+- **Format:** `GPRINT [SET/OR/XOR,] <bit-image>;<bit-image>;…` | `GPRINT [SET/OR/XOR,] "<hex bit-image string>"` | `GPRINT` — **Abbr.** `GP.` — **See also:** GCURSOR
+- **Purpose:** Draw columns of bit-image dots on the screen from the graphics cursor. Each item = 8 bits = one 7-dot-tall column (bit 1 top). Decimal or `&`-prefixed hex items separated by `;`, or one hex string (odd last char ignored). `SET` (default) writes the pattern; `OR` / `XOR` combine with existing dots. `GPRINT` alone moves the graphics cursor down one line without clearing.
+
+```
+GPRINT &0;&1C;&1C;&1C;&1C;&1C;&1C;&1C;&1C;&1C;&7F;&3E;&1C;&08
+GPRINT 16;40;18;253;18;40;16
+GPRINT "102812F0122810"
+```
+
+### GRAD
+- **Format:** `GRAD` — **Abbr.** `GR.` — **See also:** DEGREE, RADIAN
+- **Purpose:** Set the angular unit to grads (`GRAD` on the status line).
+
+### GRAPH
+- **Format:** `GRAPH` — **Abbr.** `GRAP.` — **See also:** TEXT
+- **Purpose:** Put the printer in graphics mode; resets the `PAPER` print-range limits to their defaults.
+
+---
+
+## H
+
+### HEX$
+- **Format:** `HEX$(<X>)` | `HEX$(&<X>)` — **Abbr.** `H.` — **See also:** VAL
+- **Purpose:** Hex string (`&0`–`&FFFF`) for a value 0–65535 (rounded to integer). `<X>` must be a simple variable or number, **not** an expression — evaluate first into a variable.
+
+```
+50:D$=HEX$(X)
+```
+
+---
+
+## I
+
+### IF … THEN [… ELSE]
+- **Format:** `IF <condition> THEN <line#/label/statement>` | `… THEN … ELSE <line#/label/statement>` — **Abbr.** `IF` / `T.` / `EL.`
+- **Purpose:** Branch on `<condition>`. `THEN` runs if true; if false, `ELSE` runs (or execution falls to the next line if there is no `ELSE`). `THEN`/`ELSE` may name a line, a label, or any statement. May be nested within the 80-character line limit.
+
+### INIT  **(PC-1600)**
+- **Format:** `INIT "Sn:",{"F"|"M"|"P"}` | `INIT "X:"` | `INIT "COMn:",<buffer size>` — **Abbr.** `INI.` — **See also:** SETCOM, SETDEV, TITLE
+- **Purpose:**
+  1. **Module in slot 1/2** (MODE 0 only): `"F"` format as RAM disk; `"M"` add to internal user area (bigger programs); `"P"` program-storage area (one battery-backed program, survives removal). Fails on a module holding programs/files (clear with `KILL` / `NEW` first), a write-protected module, or a `TITLE`-selected program module. A CE-159 (8K) must be all-program or all-expansion.
+  2. **`INIT "X:"`** — format a floppy (required for new disks; **erases** any existing contents).
+  3. **`INIT "COMn:",<size>`** — receive-buffer size 80–16383 bytes, or `0` = minimum 40 bytes (also the power-on/reset default). Typical 256. Fails on insufficient memory or while a file is open `FOR APPEND`. Cannot be used inside a `FOR…NEXT` loop.
+
+```
+>INIT"S1:","F"
+>INIT"X:"
+```
+
+### INKEY$
+- **Format:** `<string var> = INKEY$` | `= INKEY$(0)` | `= INKEY$(1)` — **Abbr.** `INK.`
+- **Purpose:** Read one key code from the keyboard buffer without echoing. `INKEY$` / `INKEY$(0)` = the latest key; `INKEY$(1)` = the oldest buffered key. No key → null string. Only the keys in the manual's INKEY$ character table are returned.
+
+```
+300:A$=INKEY$
+310:IF A$="" THEN 300
+320:IF A$="Y" THEN 500
+330:GOTO 300
+```
+
+### INP  **(PC-1600)**
+- **Format:** `INP(<port address>)` — **See also:** OUT
+- **Purpose:** Read one byte directly from a Z-80A input port, `<port address>` `&0`–`&FFFF`.
+
+### INPUT
+- **Format:** `INPUT [<message>;|,] <list of variables>` | `INPUT <variable>[,<variable>…]` (from RS-232C) — **Abbr.** `I.`
+- **Purpose:** Read keyboard values into variables (or from a serial port designated by `SETDEV`). Multiple variables comma-separated; the user enters values one per `ENTER`. No message → `?` prompt; message + `;` → no `?`, cursor after the message; message + `,` → cursor on the next line. The serial-port form shows no prompt; via the CE-158 only fixed/simple variables (no arrays).
+
+```
+10:PRINT "VOLUME OF SOLID"
+20:INPUT "ENTER L,B,H ",L,B,H
+30:V=L*B*H
+40:PRINT "VOLUME IS ";V
+```
+
+### INPUT#  **(PC-1600)**
+- **Format:** `INPUT#<file#>,<variable list>` | `INPUT#["<filename>";]<variable list>` — **Abbr.** `I.#` — **See also:** DIM, INPUT, OPEN, PRINT#, SET
+- **Purpose:** Read items from a sequential file (disk / RAM disk by `<file#>` from `OPEN`; cassette by name, default = next file). Variable order and type must match the file; string variables must be long enough; arrays need `DIM`. Delimiters: comma / space / CR+LF for numbers, comma / CR+LF for strings; leading spaces ignored; a quote inside a string truncates it unless the whole item is quoted. Too few items in the file → waits (press BREAK); excess items are left unread. For cassette (format 2) arrays are given as `A(*)`.
+
+### INSTAT  **(PC-1600)**
+- **Format:** `INSTAT "COM1:"` — **Abbr.** `INSTA.` — **See also:** OUTSTAT
+- **Purpose:** RS-232C control-signal states as an 8-bit value. Bit (from bit 1): 1 = DTR, 2 = RTS, 3 = CTS, 4 = CD, 5 = DSR, 6 = CI; `0` = signal high, `1` = signal low; bits 7–8 always 0. (`63` / `&3F` = all six low, the default.)
+
+### INSTR
+- **Format:** `INSTR([<col>,]X$,Y$)` | `INSTR([<col>,]"<string>","<char>")` — **Abbr.** `INS.`
+- **Purpose:** Position of the first occurrence of `Y$` in `X$` (from `<col>`, default 1); `0` if not found or `X$` null.
+
+```
+20:N=INSTR(A$,"A")
+```
+
+### INT
+- **Format:** `INT(<X>)`
+- **Purpose:** Largest integer `<= X` (rounds **down**, toward −∞): `INT(-3.3)` = `-4`, `INT(1.6)` = `1`.
+
+---
+
+## K
+
+### KBUFF$  **(PC-1600)**
+- **Format:** `KBUFF$ = <string>` — **Abbr.** `KB.` — **See also:** INKEY$
+- **Purpose:** Write up to 32 characters into the keyboard buffer (overwriting it) so they execute as if typed — the basis of "batch" command files. No CR is added unless included (e.g. `+CHR$(13)`).
+
+```
+200:KBUFF$="45"+CHR$(13)
+210:INPUT A
+```
+
+### KEY ON / OFF / STOP  **(PC-1600)**
+- **Format:** `KEY(<key#>) ON` | `KEY(<key#>) OFF` | `KEY(<key#>) STOP` — **See also:** ON KEY GOSUB
+- **Purpose:** Enable / disable a function key as a run-time branch trigger (with `ON KEY GOSUB`). `STOP` latches the last press for a later `ON`.
