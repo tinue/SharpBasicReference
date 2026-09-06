@@ -422,3 +422,19 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 - [TIME$](PC-1600-Command-Dictionary.md#time-1)
 - [TIME$ ON / OFF / STOP](PC-1600-Command-Dictionary.md#time-on--off--stop)
 - [TITLE](PC-1600-Command-Dictionary.md#title)
+- [TRON / TROFF](PC-1600-Command-Dictionary.md#tron--troff)
+
+### V
+
+- [VAL](PC-1600-Command-Dictionary.md#val)
+
+### W
+
+- [WAIT](PC-1600-Command-Dictionary.md#wait)
+- [WAKE$](PC-1600-Command-Dictionary.md#wake)
+
+### X
+
+- [XCALL](PC-1600-Command-Dictionary.md#xcall)
+- [XPEEK / XPEEK#](PC-1600-Command-Dictionary.md#xpeek--xpeek)
+- [XPOKE / XPOKE#](PC-1600-Command-Dictionary.md#xpoke--xpoke)

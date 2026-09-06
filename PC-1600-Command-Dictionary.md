@@ -1049,3 +1049,66 @@ GPRINT "102812F0122810"
 ### TITLE  **(PC-1600)**
 - **Format:** `TITLE "S0:"` | `TITLE "S1:"` | `TITLE "S2:"` | `TITLE?` — **Abbr.** `TIT.`
 - **Purpose:** Select the active memory: `S0:` internal RAM (ALL RESET default), `S1:`/`S2:` the program module in that slot; `TITLE?` returns 0/1/2. Error if the slot holds a RAM-disk module rather than a program module. After `TITLE` during an execution halt, ↑/↓ may not list the module's program — use `LIST`.
+
+### TRON / TROFF
+- **Format:** `TRON` | `TROFF` — **Abbr.** `TR.` / `TROF.` — **See also:** CONT, STOP
+- **Purpose:** Turn the debugging trace on/off. With trace on, after each line the computer pauses 0.5 s with the line number at the right of the screen. Press **↑** while the number shows to switch to single-step (**↑** for each next line; hold **↑** to run without numbers; **←**/**→** scan the executed line; **↓** back to continuous). At a `PRINT`/`INPUT` halt, `ENTER` resumes. After a `STOP`/BREAK, **↑** resumes continuous trace, **↓** single-step. Trace stays on until `TROFF`.
+
+---
+
+## V
+
+### VAL
+- **Format:** `VAL(<X$>)` — **Abbr.** `V.` — **See also:** STR$
+- **Purpose:** String of numeric characters → value (inverse of `STR$`). Accepts `0`–`9`, one decimal point, sign; conversion stops at the first illegal character.
+
+---
+
+## W
+
+### WAIT
+- **Format:** `WAIT <duration>[,P]` | `WAIT <duration>[,S]` | `WAIT` — **Abbr.** `W.` — **See also:** GPRINT, LINE, PRINT
+- **Purpose:** Hold the display for a fixed time after `PRINT` / `GPRINT` / `LINE`. `<duration>` 0–65535 in ≈ 1/64 s units (`WAIT 64` ≈ 1 s). `P` (default) waits after the statement; `S` applies the wait to screen scrolling (both MODE 0 only). Bare `WAIT` = wait forever (until `ENTER`). `RUN` defaults: MODE 0 no pause, MODE 1 infinite.
+
+```
+20:WAIT 200
+30:PRINT "READ THIS QUICKLY!"
+40:WAIT
+50:PRINT "NOW ITS GONE"
+```
+
+### WAKE$  **(PC-1600)**
+- **Format:** `WAKE$(0) = "<time>;<command string>"` | `WAKE$(1) = "<command string>"` | `WAKE$(0) = ""` | `WAKE$(1) = ""` — **Abbr.** `WAK.` — **See also:** KBUFF$, POWER
+- **Purpose:** Auto power-on. Format 0 — turn on at `<time>` (`MM/DD/HH/mm`) and run `<command string>`. Format 1 — turn on and run the command when the RS-232C **CI** line (pin 9) goes high. The command string must end with `CHR$(&0D)` and be ≤ 26 characters. `= ""` releases the setting.
+
+```
+>WAKE$(0)="12/25/07/30;RUN"+CHR$(&0D)
+```
+
+---
+
+## X
+
+### XCALL  **(MODE 1)**
+- **Format:** `XCALL <address>[,<variable>]` — **Abbr.** `XC.` — **See also:** NEW, POKE, XPOKE
+- **Purpose:** As `CALL`, but PC-1500-compatible (LH-5801/3 sub-processor address space). One variable is passed both ways via the **A** and **X** registers: a numeric value (integer −32768..32767) in **X**, returned in the same variable if carry is set on exit; a string variable → **X** = string address, **A** = length. Two-character variable names must be `DIM`ed. The routine must be in memory via `XPOKE`.
+
+```
+400:XCALL 57405,X
+```
+
+### XPEEK / XPEEK#  **(MODE 1)**
+- **Format:** `XPEEK <address>` | `XPEEK# <address>` — **Abbr.** `XP.` — **See also:** PEEK, POKE, XPOKE
+- **Purpose:** As `PEEK`, PC-1500-compatible. `XPEEK` reads memory area 0 (ME 0); `XPEEK#` reads memory area 1 (ME 1), currently accessed bank. See Appendix D.
+
+```
+>XPEEK 100     → 37
+```
+
+### XPOKE / XPOKE#  **(MODE 1)**
+- **Format:** `XPOKE <start address>,<integer list>` | `XPOKE# <start address>,<integer list>` — **Abbr.** `XPO.` — **See also:** PEEK, POKE, XPEEK
+- **Purpose:** As `POKE`, PC-1500-compatible. `XPOKE` writes to memory area 0 (ME 0); `XPOKE#` to memory area 1 (ME 1), currently accessed bank. `<integer list>` bytes 0–255, comma-separated, into consecutive addresses. See Appendix D.
+
+```
+>XPOKE 100,255,255
+```
