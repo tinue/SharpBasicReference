@@ -196,3 +196,13 @@ Quick-reference links to every command in all three documents. Sections use the 
 
 - [OPN](CE-158-Reference.md#opn)
 - [PRINT#-9,](CE-158-Reference.md#print-9)
+
+---
+
+## PC-1600 BASIC — [PC-1600-BASIC-Reference.md](PC-1600-BASIC-Reference.md)
+
+The PC-1600's full command set (Appendix G of its Operation Manual) is catalogued by category in
+the [BASIC Command Dictionary index](PC-1600-BASIC-Reference.md#14-basic-command-dictionary).
+Per-command anchor links will be added here as the dictionary entries are written.
+
+See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
