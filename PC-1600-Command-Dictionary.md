@@ -519,3 +519,115 @@ GPRINT "102812F0122810"
 ### KEY ON / OFF / STOP  **(PC-1600)**
 - **Format:** `KEY(<key#>) ON` | `KEY(<key#>) OFF` | `KEY(<key#>) STOP` — **See also:** ON KEY GOSUB
 - **Purpose:** Enable / disable a function key as a run-time branch trigger (with `ON KEY GOSUB`). `STOP` latches the last press for a later `ON`.
+
+### KEYSTAT  **(PC-1600)**
+- **Format:** `KEYSTAT,[<repeat>][,<click>]` — **Abbr.** `KE.` — **See also:** INKEY$
+- **Purpose:** `<repeat>` 0/1 = key auto-repeat off/on; `<click>` 0/1 = key click off/on. Power-on keeps the last values; ALL RESET default is `KEYSTAT,0,0`.
+
+### KILL  **(PC-1600)**
+- **Format:** `KILL "<d:filename>"` — **Abbr.** `K.` — **See also:** SAVE, SET
+- **Purpose:** Delete a file on floppy / RAM disk (`.BAS` must be given for BASIC files). Errors if `SET`-protected, if the RAM module write-protect switch is on, or if the file is open.
+
+---
+
+## L
+
+### LCURSOR
+- **Format:** `LCURSOR <column>` — **Abbr.** `LC.` — **See also:** GLCURSOR, PCONSOLE, TAB
+- **Purpose:** In printer TEXT mode, move the pen to a print column 0…(line length set by `PCONSOLE`). (PC-1500's `LCURSOR` is `TAB` here.)
+
+### LEFT$
+- **Format:** `LEFT$(<X$>,<N>)` — **Abbr.** `LEF.` — **See also:** MID$, RIGHT$
+- **Purpose:** Leftmost `N` characters of `X$` (`N` 0–80, truncated; `N<1` → null; `N` over the length → whole string).
+
+### LEN
+- **Format:** `LEN(<X$>)`
+- **Purpose:** Number of characters in `X$`, including spaces and control codes.
+
+### LET
+- **Format:** `[LET] <variable> = <expression>[,<variable> = <expression>…]` — **Abbr.** `LE.`
+- **Purpose:** Assignment. `LET` is optional except inside a `THEN`/`ELSE` clause. Expression type must match the variable type. Multiple assignments comma-separated.
+
+### LF
+- **Format:** `LF [<lines>]` — **See also:** CSIZE, PITCH, PAPER
+- **Purpose:** Feed printer paper. Bare `LF` = one line. `<lines>` positive = forward, negative = reverse, within the range set by `PAPER`. Line height depends on `CSIZE`.
+
+### LFILES  **(PC-1600)**
+- **Format:** `LFILES "<d:>"` | `LFILES "<d:filename>"` | `LFILES "<d:ambiguous filename>"` — **Abbr.** `LF.` — **See also:** FILES, SETDEV
+- **Purpose:** As `FILES`, but the directory goes to the printer or, if `SETDEV` selected a port, to `COM1:`/`COM2:`. On the CE-1600P it prints at character size 2 regardless of `CSIZE`.
+
+### LINE  **(PC-1600)**
+- **Format:** `LINE [(X1,Y1)]-(X2,Y2)[,<dot toggle>][,<pattern>][,B|,BF]` — **Abbr.** `LIN.` — **See also:** LLINE
+- **Purpose:** Draw a line on the **graphics screen** from `(X1,Y1)` (or the graphics cursor) to `(X2,Y2)`, coords relative to `(0,0)` top-left.
+- **Remarks:** `<dot toggle>`: `S` (default) 1-bits set dots on; `R` 1-bits clear dots (inverse video); `X` inverts dots along the line. `<pattern>` 0–65535 / `&0000`–`&FFFF` is the 16-bit repeating dot pattern (`&FFFF` solid, `&AAAA` dotted, `&6666` dashed). `B` draws a box on the diagonal, `BF` a filled box. Coords accept −32768..32767 but only X 0–155 / Y 0–31 show.
+
+```
+40:LINE (N,10)-(M,20),,BF
+```
+
+### LIST
+- **Format:** `LIST` | `LIST <line#>` — **Abbr.** `L.` — **See also:** LLIST
+- **Purpose:** List the program on screen (one screenful from the lowest line; **↓** scrolls). `LIST <line#>` shows one line; a too-high number → error.
+
+### LLINE
+- **Format:** `LLINE [(X1,Y1)]-(X2,Y2)[-(X3,Y3)…][,<type>][,<color>][,B]` — **Abbr.** `LLIN.` — **See also:** COLOR, RLINE, SORGN
+- **Purpose:** Draw line segments on the **printer** in absolute coordinates (relative to the `SORGN` origin), X/Y −2048..2047; up to five further contiguous segments.
+- **Remarks:** `<type>` 0–9 (0 solid … 8 progressively dashed, 9 blank/pen-move-only). `<color>` 0–3 (see `COLOR`). Defaults = current values, **except** immediately after an `LPRINT` in graphics mode (and for programs ported from the PC-1500's `LINE`), where `<type>` must be given explicitly. `B` draws a rectangle on the `(X1,Y1)`–`(X2,Y2)` diagonal.
+
+```
+10:GRAPH
+20:GLCURSOR (40,40)
+30:SORGN
+40:LLINE -(100,0)-(0,100)-(0,0)
+50:TEXT
+```
+
+### LLIST / LLIST*
+- **Format:** `LLIST[*]` | `LLIST[*] <line#>` | `LLIST[*] <line#>,<line#>` | `LLIST[*] <line#>,` | `LLIST[*] ,<line#>` — **Abbr.** `LL.` — **See also:** LIST
+- **Purpose:** As `LIST` but to the printer (or to the serial port if `SETDEV` opened one with the port-output option). Line ranges as `DELETE`.
+- **Remarks:** Output wraps per the `PCONSOLE` line length; length 16–17 with an over-long line → **ERROR 76**, no output. Line terminator (CR / LF / LF+CR) per `PCONSOLE`. Ignored if a `PASS` password is set. `LLIST*` prints **only** apostrophe-comment lines that start at the head of a line, suppressing the line number and `'` (a trailing `;` continues the comment on the listing) — useful for printing a program's documentation. To a serial port, keep line numbers ≤ 99 (2 digits) for complete `LLIST*` output. `CSIZE 1` lists at size 1, otherwise size 2; text mode is selected automatically.
+
+### LN
+- **Format:** `LN(<X>)` — **See also:** EXP
+- **Purpose:** Natural logarithm (base e) of `X > 0`.
+
+### LOAD / LOAD*
+- **Format:** `LOAD "<d:filename>"[,R]` | `LOAD* "<d:filename>"` — **Abbr.** `LOA.` — **See also:** CHAIN, LLIST*, MERGE, REM, RUN, SAVE
+- **Purpose:** Load a file from `S1:`/`S2:`, `X:`/`Y:`, `COMn:` or `CAS:` into memory. `,R` = run it afterwards (as `RUN`; used by AUTORUN); non-BASIC content → execution error. Open files are closed on `LOAD` unless `,R`.
+- **`LOAD*`** prefixes each loaded line with a number (from 10, step 10) and an apostrophe, turning an ASCII text file into BASIC comment lines — the only way the PC-1600 handles raw text at file level (list it back with `LLIST*`). From a serial port, CR+LF = end of line, `&1A` = end of file.
+
+```
+>LOAD"BIOCALC",R
+```
+
+### LOC  **(PC-1600)**
+- **Format:** `LOC(<file#>)`
+- **Purpose:** Records read/written since the file was opened (floppy / slot modules only). One record = 256 bytes.
+
+### LOCK / UNLOCK
+- **Format:** `LOCK` | `UNLOCK` — **Abbr.** `LOC.` / `UN.`
+- **Purpose:** Disable / re-enable the MODE key (locks the current PRO or RUN mode; cannot lock RESERVE).
+
+### LOF  **(PC-1600)**
+- **Format:** `LOF(<file#>)` — **See also:** DSKF
+- **Purpose:** Size in bytes of an open file on floppy / slot modules.
+
+### LOG
+- **Format:** `LOG(<X>)` — **Abbr.** `LO.`
+- **Purpose:** Common (base-10) logarithm. Other base: `LOG(X)/LOG(B)`. Antilog: `10^x`.
+
+### LPRINT / LPRINT USING
+- **Format:** `LPRINT [<list>][;]` | `LPRINT USING <format>;<list>` | `LPRINT TAB <col>;<expr>;…` — **Abbr.** `LP.` — **See also:** PCONSOLE, PRINT, PZONE, TAB
+- **Purpose:** As `PRINT` / `PRINT USING` but to the printer (or a serial port per `SETDEV`). Bare `LPRINT` = blank line / feed. `;` between items = adjacent; `,` = next print zone (numbers right-justified if at a zone start, else left in the next zone); `TAB <col>` sets the column (over the `PCONSOLE` width → error). Trailing `;` keeps the next output on the same line. In graphics mode, lines are not terminated with CR/LF.
+
+---
+
+## M
+
+### MAXFILES  **(PC-1600)**
+- **Format:** `MAXFILES = <number of files>` — **Abbr.** `MA.` — **See also:** CLOSE, OPEN
+- **Purpose:** Maximum simultaneously open files, 0–15 (0 at power-on, so it must be set before any `OPEN`). All files must be closed when it runs. Each file reserves 313 bytes (grows as needed). Cannot be used inside a `FOR…NEXT` loop.
+
+### MEM
+- **Format:** `MEM` — **Abbr.** `M.` — **See also:** STATUS
+- **Purpose:** Unused user-area memory in bytes, including the variable area (= `STATUS 0`).

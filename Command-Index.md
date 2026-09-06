@@ -308,3 +308,30 @@ See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
 
 - [KBUFF$](PC-1600-Command-Dictionary.md#kbuff)
 - [KEY ON / OFF / STOP](PC-1600-Command-Dictionary.md#key-on--off--stop)
+- [KEYSTAT](PC-1600-Command-Dictionary.md#keystat)
+- [KILL](PC-1600-Command-Dictionary.md#kill)
+
+### L
+
+- [LCURSOR](PC-1600-Command-Dictionary.md#lcursor)
+- [LEFT$](PC-1600-Command-Dictionary.md#left)
+- [LEN](PC-1600-Command-Dictionary.md#len)
+- [LET](PC-1600-Command-Dictionary.md#let)
+- [LF](PC-1600-Command-Dictionary.md#lf)
+- [LFILES](PC-1600-Command-Dictionary.md#lfiles)
+- [LINE](PC-1600-Command-Dictionary.md#line)
+- [LIST](PC-1600-Command-Dictionary.md#list)
+- [LLINE](PC-1600-Command-Dictionary.md#lline)
+- [LLIST / LLIST*](PC-1600-Command-Dictionary.md#llist--llist)
+- [LN](PC-1600-Command-Dictionary.md#ln)
+- [LOAD / LOAD*](PC-1600-Command-Dictionary.md#load--load)
+- [LOC](PC-1600-Command-Dictionary.md#loc)
+- [LOCK / UNLOCK](PC-1600-Command-Dictionary.md#lock--unlock)
+- [LOF](PC-1600-Command-Dictionary.md#lof)
+- [LOG](PC-1600-Command-Dictionary.md#log)
+- [LPRINT / LPRINT USING](PC-1600-Command-Dictionary.md#lprint--lprint-using)
+
+### M
+
+- [MAXFILES](PC-1600-Command-Dictionary.md#maxfiles)
+- [MEM](PC-1600-Command-Dictionary.md#mem)
