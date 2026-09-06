@@ -464,13 +464,61 @@ String comparison in line 60 needs exact spelling, spacing and case.
 `DSKF`, `EOF`, `LOC`, `LOF`, `MAXFILES` help advanced programs check sizes and avoid
 device-full / file errors.
 
-### 12. Access to Serial Ports — **TODO**
-- Specifying the port
-- Protocol options
-- Communication parameters
-- Receive buffer
-- Output to a serial port (programs & data, program files, control codes)
-- Input from a serial port (data, files)
+### 12. Access to Serial Ports
+
+The two ports — **`COM1:`** (RS-232C) and **`COM2:`** (optical) — are treated by BASIC as
+sequential I/O devices; **`COM:`** is whichever is currently accessed. Control commands:
+`COMn ON/OFF/STOP`, `PCONSOLE`, `INIT`, `INSTAT`, `ON COMn GOSUB`, `ON PHONE GOSUB`, `OUTSTAT`,
+`PHONE ON/OFF/STOP`, `RCVSTAT`, `SETCOM`, `SETDEV`, `SNDBRK`, `SNDSTAT`, `PZONE`.
+
+#### Specifying the port
+
+**`SETDEV`** selects `COM1:` or `COM2:` for all subsequent communication commands until the next
+`SETDEV`. It also redirects the printer commands (`LLIST`, `LFILES`, `LPRINT` — normally the
+printer at power-on) to the chosen port, and directs them back to the printer (closing both ports).
+`DEV$` shows the current `SETDEV` settings. `SAVE` / `LOAD` transfer whole files over a port.
+
+#### Protocol options
+
+Handshake protocol: **`SNDSTAT`** for sending, **`RCVSTAT`** for receiving. Individual outgoing
+control-signal states: **`OUTSTAT`** (leaves the machine ready for simple transmission if no
+parameters given). **`INSTAT`** shows current receive-protocol settings.
+
+#### Communication parameters (`SETCOM`, read back with `COM$`)
+
+1. Baud rate 50–38400
+2. Word length 5–8 bits
+3. Parity even / odd / none
+4. Stop bits 1 or 2
+5. XON/XOFF on/off
+6. Shift in/out on/off
+
+Baud-rate ceilings by use: `SAVE`/`LOAD`/`BSAVE`/`BLOAD` and `COPY` to/from a port — **9600** on
+`COM1:`, **38400** on `COM2:`. `INPUT`/`INPUT#`/`PRINT#`/`LLIST`/`LPRINT` — **4800** on both.
+
+#### Receive buffer
+
+Incoming data lands in a receive buffer whose size is set with **`INIT`**.
+
+#### Output to a port
+
+Usable commands: `CHR$`, `LFILES`, `LLIST`, `LPRINT` / `LPRINT USING`, `OPEN`, `PRINT#` /
+`PRINT# USING`, `PZONE`, `SAVE`.
+
+- **Programs / data via printer commands:** `SETDEV` (with the port-output option) → `PZONE` sets
+  `LPRINT` format → `PCONSOLE` sets line length and EOL code → `LLIST` sends the listing.
+- **As a file:** `MAXFILES` → `OPEN` the port for output with a number → `PRINT#` / `PRINT# USING`
+  → `CLOSE`.
+- **A whole file:** `SAVE` the file directly to the port.
+- **Control codes:** `CHR$` — e.g. `10 LPRINT CHR$(4)` sends ASCII EOT after the port is opened.
+
+#### Input from a port
+
+Usable commands: `INIT`, `INPUT#`, `LOAD`, `OPEN`, `PCONSOLE`, `RXD$`, `SNDBRK`.
+
+- **Data:** `MAXFILES` → `INIT` (buffer size) → `OPEN` the port `FOR INPUT` as a file → `INPUT#`
+  → `CLOSE`.
+- **A whole file:** `LOAD` from the port, as from disk.
 
 ### 13. Debugging — **TODO**
 - Syntax errors
