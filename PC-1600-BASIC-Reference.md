@@ -258,11 +258,98 @@ Retrieved in any mode with **DEF** + key (engraved on the supplied template):
 `CSAVE` / `CLOAD` / `MERGE` need a cassette recorder on the CE-1600P. **DEF + function key**
 gives six more: `RUN`+ENTER, `AUTO`, `LOAD"`, `SAVE"`, `FILES"`, `"COM1:"`.
 
-### 10. Data Representation — **TODO**
-- Types of data (text data & character sets, character strings)
-- Constants (string, numeric)
-- Variables (names; types: fixed numeric, simple numeric, numeric arrays, fixed string, simple string, string arrays)
-- Expressions and operators (arithmetic, comparison, logical, functional)
+### 10. Data Representation
+
+Data is handled in **bytes** (8 bits, 0–255). Hexadecimal is written with a leading `&`
+(`&27` = 39 decimal).
+
+#### Types of data
+
+- **Text / character sets** — the PC-1600 uses a character set close to the IBM PC. It differs
+  from the PC-1500 set, so some displayed characters change between screen MODE 0 and MODE 1 —
+  chiefly `&5B` (√), `&5D` (π) and some bracket types. See Appendix C.
+- **Character strings** — up to 80 characters handled as a unit; no arithmetic, but strings can
+  be concatenated and sliced.
+- **Numeric data** — stored in binary; accepted in decimal, floating-point, or (with `HEX$`)
+  hexadecimal. Internally floating point: 12-digit mantissa × power of 10, **rounded to 10 digits**
+  on output. Range **±9.999999999×10⁻⁹⁹ to ±9.999999999×10⁺⁹⁹**; operational error ±1 in the
+  10th digit.
+
+#### Constants
+
+- **String constant** — characters in double quotes; `""` is the null string (zero length, see
+  `INKEY$`). Maximum length **30 characters**.
+- **Numeric constants** — four kinds:
+
+| Kind | Range / form | Examples |
+|------|--------------|----------|
+| Integer | −32768 to +32767, optional `+`/`-` sign | `123`, `+2`, `-57`, `1024` |
+| Fixed point | signed number with a decimal fraction | `12.7`, `+1.345`, `-67.9888` |
+| Floating point | `<fixed>E<exponent>`, either part signed | `2.43E9`, `+1.99E-3`, `+50.23E+2` |
+| Hexadecimal | `&0` to `&FFFF` (0–65535); no sign, no fraction | `&23`, `&8000`, `&FFFF` |
+
+#### Variables
+
+Two data classes — **numeric** and **string** (`$` suffix). A numeric variable is `0` until set;
+a string variable is null.
+
+**Names:** first character an upper-case `A`–`Z`; optional second character `A`–`Z` or `0`–`9`;
+string names end in `$`. Extra characters are allowed but **ignored** — `TOTAL` and `TOP` are the
+same variable (but `A` and `AB` differ). Examples: `A`, `AB`, `C1`, `D9`, `CC$`, `NO$(4)`.
+
+**Three storage types:**
+
+| Type | Numeric names | String names | Storage |
+|------|---------------|--------------|---------|
+| **Fixed** | `A`–`Z` (26) | `A$`–`Z$` | Dedicated fixed-variable memory area; always allocated. Addressable as a 1-D array via `@(1)`–`@(26)` / `@$(1)`–`@$(26)` (`@(1)` = `A`). Cleared by `CLEAR` (not by `ERASE`). |
+| **Simple** | `A0`–`Z9`, `AA`–`ZZ` | `+ $` | In the BASIC program area; the more used, the less program room (add a RAM module if it runs out). Cleared by `CLEAR` and `ERASE`. |
+| **Array** | `A0(0)`–`Z9(255)`, `AA(0)`–`ZZ(255)` | `+ $` | Declared with `DIM`. |
+
+**Fixed / simple string variables** hold up to **16 characters**.
+
+**Arrays:** 1-D (list) or 2-D (table); subscripts are integers and may themselves be variables,
+starting at **0** (`A(0,0)` is the first element). A name cannot be both 1-D and 2-D at once.
+Max **65535 members** (2-D: 255 × 255); max array size **64 KB**. Cleared by `ERASE` (leaves
+fixed variables intact). For **string arrays**, `DIM` should also declare each member's maximum
+length — otherwise 16 characters are reserved per member (wasteful for short strings).
+
+#### Expressions and operators
+
+**Arithmetic**, in decreasing precedence:
+
+| Operator | Operation |
+|----------|-----------|
+| `^` | Exponentiation |
+| `-` (unary) | Negation |
+| `*` `/` | Multiplication, division |
+| `MOD` | Modulus |
+| `\` | Integer division |
+| `+` `-` | Addition, subtraction |
+
+Parentheses override precedence. Consecutive exponentiation and power/negation combinations
+evaluate **right to left** (`3^4^2` = `3^(4^2)`). Arithmetic takes priority over relational and
+logical operators.
+
+**Relational** — `=`, `<>`, `<`, `>`, `<=`, `>=`; result is `1` (true) or `0` (false). Numeric
+compares to numeric, string to string (not mixed). Strings compare character-by-character by
+character code (Appendix C); on a mismatch the higher code is "greater"; if one string is a
+prefix of the other the longer is greater. `=` also serves assignment (`LET`) — different meaning.
+
+**Logical** — `AND`, `OR`, `NOT`, evaluated after arithmetic and relational operators. Used for
+multi-condition `IF` (`IF A<=32 AND B>=90 THEN 150`). On numbers −32768..32767 the operation is
+bitwise on 16-bit two's-complement integers (`41 AND 27` = `9`; `41 OR 27` = `59`; `NOT 3` = `-4`).
+In general `NOT X = -(X + 1)`.
+
+**Functional** — built-in functions taking one operand: `ABS`, `ACS`, `ASN`, `ATN`, `COS`, `DEG`,
+`DMS`, `EXP`, `INT`, `LN`, `LOG`, `PI`, `RND`, `SGN`, `SIN`, `SQR`, `TAN`. Angular unit set by
+`DEGREE` / `RADIAN` / `GRAD`. The manual states **exponentiation has priority over functions**, so
+parentheses are sometimes needed. Its worked examples:
+
+| Algebraic | PC-1600 expression |
+|-----------|--------------------|
+| sin²30° | `(SIN 30)^2` |
+| (sin 30°)² | `SIN 30^2` |
+| cos⁴(A+B) | `(COS(A+B))^4` |
 
 ### 11. Files — **TODO**
 - File descriptors (logical device name / medium, file name, extension)
