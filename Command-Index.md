@@ -202,7 +202,22 @@ Quick-reference links to every command in all three documents. Sections use the 
 ## PC-1600 BASIC — [PC-1600-BASIC-Reference.md](PC-1600-BASIC-Reference.md)
 
 The PC-1600's full command set (Appendix G of its Operation Manual) is catalogued by category in
-the [BASIC Command Dictionary index](PC-1600-BASIC-Reference.md#14-basic-command-dictionary).
-Per-command anchor links will be added here as the dictionary entries are written.
+the [BASIC Command Dictionary index](PC-1600-BASIC-Reference.md#14-basic-command-dictionary), with
+detailed per-command entries in the
+[PC-1600 Command Dictionary](PC-1600-Command-Dictionary.md).
 
 See also: [PC-1600 Error Codes](PC-1600-Error-Codes.md).
+
+### A
+
+- [ABS](PC-1600-Command-Dictionary.md#abs)
+- [ACS](PC-1600-Command-Dictionary.md#acs)
+- [ADIN ON / OFF / STOP](PC-1600-Command-Dictionary.md#adin-on--off--stop)
+- [AIN](PC-1600-Command-Dictionary.md#ain)
+- [ALARM$](PC-1600-Command-Dictionary.md#alarm)
+- [AREAD](PC-1600-Command-Dictionary.md#aread)
+- [ARUN](PC-1600-Command-Dictionary.md#arun)
+- [ASC](PC-1600-Command-Dictionary.md#asc)
+- [ASN](PC-1600-Command-Dictionary.md#asn)
+- [ATN](PC-1600-Command-Dictionary.md#atn)
+- [AUTO](PC-1600-Command-Dictionary.md#auto)

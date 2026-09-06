@@ -566,9 +566,10 @@ Command pages in the manual use these mode/device markers:
 
 Format-description notation: `[ ]` optional, `< >` a value you supply, `( )` literal parentheses to type.
 
-> The entries below are the complete command set (Appendix G). Each links to its detailed section
-> once written. Commands marked **(new vs PC-1500)** did not exist on the PC-1500; commands marked
-> **(MODE 1)** exist only for PC-1500 compatibility.
+> The tables below are the complete command set (Appendix G), grouped by function as a map.
+> **Detailed per-command entries are in [PC-1600 Command Dictionary](PC-1600-Command-Dictionary.md).**
+> Commands marked **(new vs PC-1500)** did not exist on the PC-1500; **(MODE 1)** commands exist
+> only for PC-1500 compatibility.
 
 ### Program control
 | Command | Purpose |
