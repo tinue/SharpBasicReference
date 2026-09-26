@@ -1078,11 +1078,11 @@ GPRINT "102812F0122810"
 ```
 
 ### WAKE$  **(PC-1600)**
-- **Format:** `WAKE$(0) = "<time>;<command string>"` | `WAKE$(1) = "<command string>"` | `WAKE$(0) = ""` | `WAKE$(1) = ""` — **Abbr.** `WAK.` — **See also:** KBUFF$, POWER
+- **Format:** `WAKE$(0) = "<time>:<command string>"` | `WAKE$(1) = "<command string>"` | `WAKE$(0) = ""` | `WAKE$(1) = ""` — **Abbr.** `WAK.` — **See also:** KBUFF$, POWER
 - **Purpose:** Auto power-on. Format 0 — turn on at `<time>` (`MM/DD/HH/mm`) and run `<command string>`. Format 1 — turn on and run the command when the RS-232C **CI** line (pin 9) goes high. The command string must end with `CHR$(&0D)` and be ≤ 26 characters. `= ""` releases the setting.
 
 ```
->WAKE$(0)="12/25/07/30;RUN"+CHR$(&0D)
+>WAKE$(0)="12/25/07/30:RUN"+CHR$(&0D)
 ```
 
 ---
