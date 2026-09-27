@@ -631,6 +631,7 @@ GPRINT "102812F0122810"
 ### MEM
 - **Format:** `MEM` — **Abbr.** `M.` — **See also:** STATUS
 - **Purpose:** Unused user-area memory in bytes, including the variable area (= `STATUS 0`).
+- **Remarks:** Always the **S0** area (internal RAM plus any module folded into it), whatever `TITLE` selects: it is computed from the S0 program end and the variable area only. For a program module in slot 1 / slot 2 use `STATUS 259` / `STATUS 260`. (ROM: the LH-5803 `STATUS 0` code, $CBF8/$CC30.)
 
 ### MERGE  **(MODE 1)**
 - **Format:** `MERGE` | `MERGE "<filename>"` — **Abbr.** `MER.` — **See also:** CLOAD
@@ -1001,6 +1002,8 @@ GPRINT "102812F0122810"
 | 258 | Unallocated user memory (free area) in bytes |
 | 259 | Unused memory in the slot-1 program module in bytes |
 | 260 | Unused memory in the slot-2 program module in bytes |
+
+**Which program area.** 0–4 and 256–257 always describe the **S0** area, whatever `TITLE` selects (they read the S0 program pointers). 259 / 260 describe the slot-1 / slot-2 program module: the area limit minus the program end (0 or nothing if the slot holds no program module). An empty 32 KB program module reads 32571 = 32768 − 197 (the header and reserve area in front of the program).
 
 ### STOP
 - **Format:** `STOP` — **Abbr.** `ST.` — **See also:** CONT, END
