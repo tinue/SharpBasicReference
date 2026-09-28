@@ -1,5 +1,7 @@
 # Sharp PC-1500 Error Code Reference
 
+→ [README](README.md) · [Command Index](PC-1500-Command-Index.md) · [BASIC Reference](PC-1500-BASIC-Reference.md)
+
 When a runtime error occurs during program execution the display shows `ERROR n IN linenum`. In direct (RUN) mode it shows just `ERROR n`. Use `ON ERROR GOTO` to intercept errors; read the code with `ERN` and the line number with `ERL`.
 
 Errors 40–44 require the **CE-150** cassette/printer interface.
@@ -98,5 +100,6 @@ Errors 70–80 require the **CE-150** printer/plotter interface.
 ## See Also
 
 - [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md) — Core language, `ON ERROR GOTO`, `ERN`, `ERL`, `ERROR`
-- [CE-150 Reference](CE-150-Reference.md) — Printer, plotter, and cassette commands
-- [CE-158 Reference](CE-158-Reference.md) — RS-232C and parallel interface commands
+- [CE-150 Printer/Plotter/Cassette Interface](PC-1500-BASIC-Reference.md#ce-150-printerplottercassette-interface) — Printer, plotter, and cassette commands
+- [CE-158 Serial/Parallel Interface](PC-1500-BASIC-Reference.md#ce-158-serialparallel-interface) — RS-232C and parallel interface commands
+- [PC-1600 Error Codes](PC-1600-Error-Codes.md)

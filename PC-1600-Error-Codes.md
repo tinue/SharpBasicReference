@@ -1,12 +1,14 @@
 # Sharp PC-1600 Error Code Reference
 
+→ [README](README.md) · [Command Index](PC-1600-Command-Index.md) · [BASIC Reference](PC-1600-BASIC-Reference.md)
+
 When a runtime error occurs the display shows `ERROR n IN linenum` (or just `ERROR n` in direct
 mode). Intercept errors with `ON ERROR GOTO`; read the code with `ERN` and the line with `ERL`;
 continue with `RESUME`. Source: PC-1600 Operation Manual, Appendix F.
 
 The PC-1600 keeps the PC-1500 codes 1–39 (with minor wording changes) and adds three-digit codes
 for its new subsystems. In **MODE 1** with PC-1500 peripherals (CE-150 / CE-158 / CE-162E) the
-PC-1500 peripheral codes (40–80) also apply — see the [PC-1500 Error Codes](Error-Codes.md).
+PC-1500 peripheral codes (40–80) also apply — see the [PC-1500 Error Codes](PC-1500-Error-Codes.md).
 
 ---
 
@@ -138,5 +140,6 @@ PC-1500 peripheral codes (40–80) also apply — see the [PC-1500 Error Codes](
 ---
 
 ## See also
-- [PC-1600 BASIC Reference](PC-1600-BASIC-Reference.md)
-- [PC-1500 Error Codes](Error-Codes.md) — codes 40–80 for PC-1500 peripherals in MODE 1
+
+- [PC-1600 BASIC Reference](PC-1600-BASIC-Reference.md) — `ON ERROR GOTO`, `ERN`, `ERL`, `RESUME`
+- [PC-1500 Error Codes](PC-1500-Error-Codes.md) — codes 40–80 for PC-1500 peripherals in MODE 1
