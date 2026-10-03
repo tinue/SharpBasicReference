@@ -142,9 +142,9 @@ of the PC-1600 BASIC Reference. Commands marked **(new vs PC-1500)** did not exi
 | [PEEK](PC-1600-BASIC-Reference.md#peek) | Return a memory byte **(PC-1600 mode)** |
 | [POKE](PC-1600-BASIC-Reference.md#poke) | Write a memory byte **(PC-1600 mode)** |
 | [STATUS](PC-1600-BASIC-Reference.md#status) | Amount of free space in memory areas |
-| [XCALL](PC-1600-BASIC-Reference.md#xcall--mode-1) | Call a machine-language program **(MODE 1 / PC-1500 addressing)** |
-| [XPEEK / XPEEK#](PC-1600-BASIC-Reference.md#xpeek--xpeek--mode-1) | Return a memory byte **(MODE 1)** |
-| [XPOKE / XPOKE#](PC-1600-BASIC-Reference.md#xpoke--xpoke--mode-1) | Write a memory byte **(MODE 1)** |
+| [XCALL](PC-1600-BASIC-Reference.md#xcall--lh-5803) | Call an LH-5803 (PC-1500) machine-language program **(PC-1500 addressing in MODE 1)** |
+| [XPEEK / XPEEK#](PC-1600-BASIC-Reference.md#xpeek--xpeek--lh-5803) | Return a byte of the LH-5803 address space |
+| [XPOKE / XPOKE#](PC-1600-BASIC-Reference.md#xpoke--xpoke--lh-5803) | Write bytes into the LH-5803 address space |
 
 ### Files, disk, RAM disk — mostly **(new vs PC-1500)**
 | Command | Purpose |

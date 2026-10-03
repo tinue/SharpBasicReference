@@ -54,6 +54,8 @@ The `MODE` **command** (not the key) selects the interpreter personality:
 
 `TIME = 0` cannot be set on the PC-1600 (many PC-1500 programs use it to reset the time counter).
 
+The full list of differences is in [MODE 0 and MODE 1 in detail](#mode-0-and-mode-1-in-detail).
+
 ### Optional accessories
 
 | Model | Function |
@@ -569,7 +571,7 @@ Command pages in the manual use these mode/device markers:
 **Conventions.** `[ ]` optional · `< >` a value you supply · `( )` literal parentheses to type.
 Entries are alphabetical; the [PC-1600 Command Index](PC-1600-Command-Index.md) groups them by topic.
 Mode/device applicability is noted per entry. Commands marked **(PC-1600)** are new relative to
-the PC-1500; **(MODE 1)** exist only for PC-1500 compatibility. Where behaviour matches the
+the PC-1500; **(MODE 1)** exist only for PC-1500 compatibility; **(LH-5803)** run PC-1500 code on the LH-5803 in either MODE. Where behaviour matches the
 PC-1500, see also the [PC-1500 BASIC Reference](PC-1500-BASIC-Reference.md).
 
 Example listings are transcribed from the manual and lightly corrected for OCR damage; treat them
@@ -1212,7 +1214,7 @@ GPRINT "102812F0122810"
 #### MODE
 - **Format:** `MODE [0]` | `MODE 1` — **Abbr.** `MO.`
 - **Purpose:** Select the screen personality. **Direct mode only** — cannot appear on a program line.
-- **Remarks:** `MODE` / `MODE 0` — all four lines active, PC-1600 character set, CE-1600P and PC-1600 peripherals; `PRINT` fills lines then scrolls, wrapping > 26-char items. `MODE 1` — PC-1500 mode: only the bottom line active (scrolls only in PRO mode / for `INPUT`), 26-char fixed line, PC-1500 character set and peripherals; `PRINT` overwrites the bottom line and truncates > 26 chars. PC-1500 programs must run in MODE 1. After a mode change the screen is not cleared; the prompt/cursor go to home.
+- **Remarks:** `MODE` / `MODE 0` — all four lines active, PC-1600 character set, CE-1600P and PC-1600 peripherals; `PRINT` fills lines then scrolls, wrapping > 26-char items. `MODE 1` — PC-1500 mode: only the bottom line active (scrolls only in PRO mode / for `INPUT`), 26-char fixed line, PC-1500 character set and peripherals; `PRINT` overwrites the bottom line and truncates > 26 chars. PC-1500 programs must run in MODE 1. After a mode change the screen is not cleared; the prompt/cursor go to home. Everything else `MODE 1` changes: [MODE 0 and MODE 1 in detail](#mode-0-and-mode-1-in-detail).
 
 ### N
 
@@ -1657,25 +1659,28 @@ GPRINT "102812F0122810"
 
 ### X
 
-#### XCALL  **(MODE 1)**
+#### XCALL  **(LH-5803)**
 - **Format:** `XCALL <address>[,<variable>]` — **Abbr.** `XC.` — **See also:** NEW, POKE, XPOKE
 - **Purpose:** As `CALL`, but PC-1500-compatible (LH-5801/3 sub-processor address space). One variable is passed both ways via the **A** and **X** registers: a numeric value (integer −32768..32767) in **X**, returned in the same variable if carry is set on exit; a string variable → **X** = string address, **A** = length. Two-character variable names must be `DIM`ed. The routine must be in memory via `XPOKE`.
+- **Remarks:** Works in both MODEs, but the LH-5803 sees `&0`–`&3FFF` as the program module only in MODE 1, and in MODE 0 the variable must be `A`–`Z` / `A$`–`Z$` (else ERROR 110). See [MODE 0 and MODE 1 in detail](#mode-0-and-mode-1-in-detail).
 
 ```
 400:XCALL 57405,X
 ```
 
-#### XPEEK / XPEEK#  **(MODE 1)**
+#### XPEEK / XPEEK#  **(LH-5803)**
 - **Format:** `XPEEK <address>` | `XPEEK# <address>` — **Abbr.** `XP.` — **See also:** PEEK, POKE, XPOKE
 - **Purpose:** As `PEEK`, PC-1500-compatible. `XPEEK` reads memory area 0 (ME 0); `XPEEK#` reads memory area 1 (ME 1), currently accessed bank. See Appendix D.
+- **Remarks:** Addresses are LH-5803 addresses. Works in both MODEs. `&4000`–`&7FFF` is always internal RAM (= `PEEK &C000`–`&FFFF`); `&0`–`&3FFF` holds the program module only in MODE 1. See [MODE 0 and MODE 1 in detail](#mode-0-and-mode-1-in-detail).
 
 ```
 >XPEEK 100     → 37
 ```
 
-#### XPOKE / XPOKE#  **(MODE 1)**
+#### XPOKE / XPOKE#  **(LH-5803)**
 - **Format:** `XPOKE <start address>,<integer list>` | `XPOKE# <start address>,<integer list>` — **Abbr.** `XPO.` — **See also:** PEEK, POKE, XPEEK
 - **Purpose:** As `POKE`, PC-1500-compatible. `XPOKE` writes to memory area 0 (ME 0); `XPOKE#` to memory area 1 (ME 1), currently accessed bank. `<integer list>` bytes 0–255, comma-separated, into consecutive addresses. See Appendix D.
+- **Remarks:** Same address rules as `XPEEK`. In MODE 0 only `A`–`Z` may appear in the list (else ERROR 110). See [MODE 0 and MODE 1 in detail](#mode-0-and-mode-1-in-detail).
 
 ```
 >XPOKE 100,255,255
@@ -1768,6 +1773,7 @@ the [PC-1600 Command Index](PC-1600-Command-Index.md).
 
 PC-1500 BASIC generally runs on the PC-1600 in **MODE 1**. Most command names match; disk/RAM-disk
 and serial-interrupt commands are PC-1600-only. PC-1500 tape programs load and run unchanged.
+What MODE 1 changes, and why, is in [MODE 0 and MODE 1 in detail](#mode-0-and-mode-1-in-detail).
 
 **Renamed commands** (PC-1600 → PC-1500):
 
@@ -1831,6 +1837,209 @@ storage; use an authorised service centre.
 
 Present only in the German *Bedienungsanleitung* (Appendix K, "Syntax-Diagramme"); not in the
 English manual.
+
+---
+
+## MODE 0 and MODE 1 in detail
+
+*Taken from the PC-1600 ROMs themselves: the Z-80 banks, the LH-5803's own ROM and the
+CE-1600P ROM. The manuals only describe the visible effects. Points marked ✔ were also checked
+by running the real ROMs in an emulator.*
+
+### The model: one interpreter, two CPUs
+
+The BASIC interpreter runs on the Z-80 in **both** modes: line editing, the statement loop,
+variables, `PRINT`, `GOTO` and file commands. `MODE 1` does **not** pass BASIC over to the
+LH-5803 or to a separate PC-1500 interpreter.
+
+The LH-5803 runs a modified copy of the PC-1500 ROM. The Z-80 hands it one statement at a time
+whenever a keyword has no Z-80 handler of its own. That happens in **both** modes, for two
+groups of keywords:
+
+- **The PC-1500 keywords kept for compatibility.** `XCALL`, `XPOKE`, `XPOKE#`, `XPEEK` and
+  `XPEEK#` have exactly the token values of the PC-1500's `CALL`, `POKE`, `POKE#`, `PEEK` and
+  `PEEK#`. The PC-1600 only gave them new names. Their code is the PC-1500's own, running on the
+  LH-5803.
+- **The CE-150 and CE-158 keywords.** If no PC-1600 ROM module (such as the CE-1600P) takes
+  them, they run in the peripheral's own ROM on the LH-5803.
+
+What `MODE 1` really switches is everything **around** these calls:
+
+1. the memory the LH-5803 sees while it runs them;
+2. which variables PC-1500 code may use;
+3. a handful of commands that are refused in one mode or the other;
+4. how some native PC-1600 commands lay out the screen and edit lines;
+5. how program lines are stored (the tokenizer);
+6. the tape format on the CE-1600P.
+
+### Why `XPEEK` / `XPOKE` / `XCALL` behave differently
+
+The command code is the same in both modes. Two things around it change:
+
+**1. The LH-5803's 0000H–3FFFH window.** The LH-5803 has a fixed 64 KB map:
+
+| LH-5803 address | Contents | Z-80 address |
+|---|---|---|
+| `0000H`–`3FFFH` | one 16 KB module bank (the PC-1500's module area) | whatever bank is in `8000H`–`BFFFH` |
+| `4000H`–`7FFFH` | internal RAM (top part = system work area, `7C00H`–`7FFFH` included) | `C000H`–`FFFFH`, bank 0 |
+| `8000H`–`BFFFH` | CE-158 / CE-150 ROM | — |
+| `C000H`–`FFFFH` | LH-5803 ROM (the adapted PC-1500 ROM) | — |
+
+- **MODE 1:** before each of these commands the LH-5803 switches the bank that holds the
+  BASIC program into `0000H`–`3FFFH`. MODE 1 allows only one program area of at most one bank,
+  so this works out. The address space then looks like a PC-1500 with that module fitted. An
+  `XPEEK`/`XPOKE` address or an `XCALL` target means what it meant on the PC-1500, and PC-1500
+  machine code finds the BASIC program and its pointers where it expects them.
+- **MODE 0:** nothing is switched. `0000H`–`3FFFH` shows whichever bank the Z-80 last left in
+  its `8000H`–`BFFFH` page. With a single plain module that is usually the program module ✔.
+  With banked modules (CE-1600M, CE-1601M), a `TITLE`-selected slot or no module, it can be
+  another bank, or nothing at all (reads `255`) ✔. Only `4000H`–`7FFFH` is reliable in MODE 0:
+  LH-5803 `4000H + n` is Z-80 `C000H + n` (so `XPEEK &4100` = `PEEK &C100`) ✔. For Z-80
+  addresses, use the native `PEEK`/`POKE`/`CALL` with `#bank`.
+
+**2. Which variables PC-1500 code may use.** In MODE 0 the variables are in the PC-1600's own
+layout, and the PC-1500 code can reach only the fixed variables `A`–`Z` and `A$`–`Z$`. Any
+other name (`A1`, `AB`, arrays, …) in a statement that runs on the LH-5803 is refused with
+**ERROR 110**. MODE 1 allows all names. ✔ (no module fitted):
+
+| Typed | MODE 0 | MODE 1 |
+|---|---|---|
+| `XPOKE &4100,B` | ✓ | ✓ |
+| `XPOKE &4100,A1` | ERROR 110 | ✓ |
+| `XCALL &4100,A1` | ERROR 110 | ✓ |
+| `X=XPEEK A1` | ✓: the Z-80 evaluates the argument before handing over | ✓ |
+
+### CE-150 and CE-158 commands
+
+**How a keyword finds its handler.** The PC-1600 looks for a handler in a fixed order:
+
+1. If `OPN` has selected a PC-1500 device, that device's tables are searched first.
+2. Next come the PC-1600's built-in commands. Several of these share a token value with a
+   PC-1500 peripheral keyword. Each one hands the token on when the statement isn't for it:
+   - `SETCOM`, `SETDEV`, `OUTSTAT`, `INSTAT`: without a `"COM…:"` device they pass to the
+     CE-158. `SETCOM 1200,8,N,1` (CE-158 form) reaches the CE-158;
+     `SETCOM "COM1:",…` stays native.
+   - `LPRINT`, `LLIST`: unless output is redirected to a COM port, they pass to the printer:
+     a CE-1600P if one is fitted, else the CE-150.
+   - `LINE`: the PC-1500 token value that the PC-1600 uses for its *screen* `LINE`. A
+     PC-1500 program's plotter line is token `LLINE`.
+3. Then the ROM modules, such as the CE-1600P's plotter and cassette code.
+4. Last, the CE-150 / CE-158 ROM on the LH-5803. This is where these end up when no CE-1600P
+   takes them: `CSIZE`, `GRAPH`, `TEXT`, `SORGN`, `ROTATE`, `GLCURSOR`, `COLOR`, `LLINE`,
+   `TAB`, `LCURSOR`, `CONSOLE`, `RMT`, the CE-158's `TERMINAL`, `DTE`, `TRANSMIT`, and the tape
+   keywords `CLOAD`, `CSAVE`, `MERGE`, `CHAIN`.
+
+The search order is the same in both modes. **The peripheral's code is the same in both modes,
+too.** The differences are:
+
+| | MODE 0 | MODE 1 |
+|---|---|---|
+| Variables in CE-150/CE-158 statements | `A`–`Z`, `A$`–`Z$` only; else ERROR 110 (`LPRINT A1` fails; use `A=A1:LPRINT A`) | all |
+| `CSAVE`, `CLOAD`, `MERGE`, `CHAIN`, `LLIST` on a CE-150 / CE-158 | ERROR 110 (checked by the LH-5803 ROM) | run |
+| CE-158 `TERMINAL`, `DTE` | ERROR 110 | run |
+| Program memory as the peripheral code sees it | not mapped (see above) | the PC-1500 picture |
+| Expressions using PC-1600-only features (`LPRINT TIME$`) | — | fail: PC-1500 BASIC doesn't know them (TRM) |
+
+**Listing on a CE-150 needs the MODE 1 line form.** A program typed in MODE 0 stores the line
+numbers after `GOTO`/`GOSUB`/`THEN` in a binary form that the CE-150's `LLIST` can't print (see
+the tokenizer below).
+
+**CE-1600P.** The plotter commands (`LPRINT`, `LLINE`, `COLOR`, `CSIZE`, `GRAPH`, …) never test
+the MODE, so they work the same in both modes. Only the CE-1600P's **cassette** part follows the
+MODE:
+
+| CE-1600P cassette | MODE 0 | MODE 1 |
+|---|---|---|
+| Tape format | PC-1600 | PC-1500 (bit encoding, sync, 32-byte header) |
+| `CLOAD`, `CLOAD?`, `MERGE`, `CHAIN`, `CLOAD M` | ✓ PC-1600 tapes | ✓ PC-1500 tapes |
+| `CSAVE`, `CSAVE M`, `PRINT#-1` | ✓ | ERROR 110 |
+
+### Native commands that behave differently
+
+| Command | MODE 0 | MODE 1 |
+|---|---|---|
+| `MODE` | — | Sets up the PC-1500 character set, the one-line, 26-column screen and the memory layout (below) |
+| `PRINT` | 4-line screen, 13-column zones, wrap and scroll | PC-1500 style on the bottom line: `,` splits the line into two halves; long output is cut off |
+| `WAIT` default after `RUN` | no pause | wait for **ENTER** (as on the PC-1500) |
+| `INPUT A;` (trailing `;`) | allowed, cursor stays after the input | ERROR 1 ✔ |
+| `INPUT` prompt, `CONT`, direct `GOTO` | normal 4-line flow | scroll the single line up first |
+| `CURSOR` | `CURSOR x,y` on the 4-line screen | `x` = column 0–25 of the one line |
+| `GCURSOR` | graphics cursor `(x,y)` | PC-1500 meaning: dot column 0–155 for the next `GPRINT` |
+| `GPRINT` | draws at the graphics cursor | PC-1500 style: into the text line, carrying on from the last column |
+| `CLS` | cursor home | cursor to the bottom line |
+| `FILES` | 3 entries per screen | 1 entry per screen |
+| `NEW <address>` | ERROR 25 ✔ | sets the program start the PC-1500 way ✔ |
+| `INIT "S1:"` / `"S2:"` | ✓ | ERROR 110 ✔ (format RAM disks in MODE 0) |
+| `TITLE "Sx:"` | selects S0/S1/S2 | MODE 1 has picked the area itself; other program slots are hidden (ERROR 101) |
+| `RENUM` | ✓ | can't renumber a program in the MODE 1 line form (save as ASCII, reload in MODE 0) |
+| Display | PC-1600 character set, 4 × 26 | PC-1500 character set (`&27`, `&5B`, `&5D`, …), bottom line only. The Z-80 also keeps a PC-1500 display-RAM image up to date, which PC-1500 machine code may read |
+
+**Tokenizer.** In MODE 0 a line number after `GOTO`, `GOSUB`, `THEN` and the like is stored in
+binary. In MODE 1 it stays as ASCII digits, as on the PC-1500. A line is tokenized when it is
+typed or loaded, so the form follows the MODE that was active at that moment, not the MODE the
+program later runs in.
+
+**Two-byte (kanji) character handling** is off in MODE 1. This matters only for the Japanese
+character modes.
+
+### Entering and leaving MODE 1
+
+- **When `MODE 1` is refused (ERROR 110):** the ROM refuses only when the main area S0 spans
+  more than one module bank, e.g. a CE-1600M/CE-1601M folded into S0. Contrary to the
+  manual, it does **not** require a module to be fitted. Without one, the program uses
+  internal RAM only. See Appendix H for the configurations Sharp lists.
+- **Which program area MODE 1 uses:** it ignores the previous `TITLE` and chooses for itself:
+  - a one-bank **program module in S1**, else one in **S2**, else **S0**;
+  - if S0 already contains one module bank, S0 is chosen when that bank fills the whole
+    16 KB window.
+
+  The slots it doesn't choose are hidden until `MODE 0`. A program module that spans several
+  banks is hidden as well; it doesn't block MODE 1.
+- **Back to `MODE 0`:** the slot table is rebuilt and `TITLE` goes back to S0.
+- **MODE 1 is kept** across power off/on if the memory configuration still allows it. A
+  start-up check message (`NEW0? :CHECK …`) switches back to MODE 0.
+- **ERROR 110 has two meanings:** "cannot set MODE 1", and "this PC-1500-peripheral command
+  needs MODE 1".
+
+### Forcing MODE 1 with `POKE &F1BC,PEEK(&F1BC) OR 64`
+
+Hints from the time suggest this trick when `MODE 1` is refused, typically with a CE-1600M
+added to the main memory, to load PC-1500 programs larger than 12 KB from tape. The POKE
+sets bit 6 of `F1BCH`, which is the MODE 1 flag. Most of what MODE 1 does just tests that
+flag. But the `MODE` command also does three things that the POKE skips:
+
+- It sets up the memory layout: one program area of at most one bank, other slots hidden,
+  and the PC-1500 program pointers at `F860H`–`F863H` filled in.
+- It switches to the PC-1500 character set.
+- It sets the screen to 26 columns.
+
+The result is a partial MODE 1:
+
+| | Under the POKE |
+|---|---|
+| BASIC itself (Z-80) | Runs a program across all module banks. This is what the trick is for ✔ |
+| `PRINT`, `INPUT`, `CURSOR`, `GPRINT`, `WAIT` default, tokenizer, … | MODE 1 behaviour, as in the tables above ✔ (`RUN` waits for ENTER after `PRINT`) |
+| CE-1600P cassette | PC-1500 tape format. The loader is Z-80 code and fills the whole multi-bank area, which is why large PC-1500 tapes can load (not tested) |
+| `INIT "Sx:"` | refused (ERROR 110) ✔ |
+| Characters | **PC-1600 set**: `CHR$ &5B` shows `[`, not `√` ✔ |
+| Variables in PC-1500 code | all names accepted (the MODE 0 restriction is gone). Whether the LH-5803 actually reaches variables stored outside the first bank is not tested |
+| LH-5803 `0000H`–`3FFFH` | Only the **first** bank of the program is switched in ✔. The rest of the program can't be reached with `XPEEK`/`XPOKE`/`XCALL` |
+| PC-1500 program pointers | In PC-1500 form they make no sense for a program over two banks: with a 17 KB program, start `00C5H` and end `060FH` ✔. Any LH-5803 code that walks the program (CE-150 `LLIST`, `CSAVE`, `CLOAD`, `MERGE`, PC-1500 machine code) will see the wrong program, or overwrite memory |
+| `MODE 1` typed again | silently does nothing: the flag already says MODE 1 ✔ |
+| `MODE 0` | returns cleanly; the full memory layout is restored ✔ |
+| Power off/on | The start-up code tries to set up MODE 1 properly, fails and clears the flag. The machine comes back in MODE 0 |
+
+Safe use under the POKE: load and run the program with BASIC and the CE-1600P, and avoid
+CE-150/CE-158 tape and listing commands and PC-1500 machine code that touches the program.
+
+### What is the same in both modes
+
+- Arithmetic, functions and comparisons. Some of these run on the LH-5803 in either mode.
+- `MEM`, variables and arrays (on the Z-80 side).
+- `LOAD`/`SAVE`/`BLOAD`/`BSAVE`, RAM-disk and floppy files, and the PC-1600 serial commands
+  with a `"COM…:"` device.
+- The CE-1600P plotter.
+- `TIME = 0` is an error in both modes.
 
 ---
 
