@@ -487,7 +487,7 @@ it.
 
 | | **`COM1:`** — RS-232C | **`COM2:`** — SIO |
 |---|---|---|
-| Connector | 15-pin, left side | 5-pin, labelled **SIO**, right side |
+| Connector | 15-pin, right side | 5-pin, labelled **SIO**, right side |
 | Signal levels | RS-232C polarity, about **+6 V / −8.5 V** (not ±12 V) | 5 V logic; the optics are in the **CE-1600L** fibre-optic cable plug |
 | Lines | TXD, RXD, RTS, CTS, DSR, CD, CI, DTR, GND | SD, RD, GND, Vcc (no handshake lines) |
 | Hardware handshake (`SNDSTAT`/`RCVSTAT` protocol, `OUTSTAT`, `INSTAT`) | yes | **no** — only the timeouts apply |
