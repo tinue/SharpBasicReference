@@ -2648,7 +2648,9 @@ program, so `LOAD "COM1:"` of a larger program then fails for lack of memory, no
 **Recommendations**, in order of preference:
 
 1. **Make the host stop in hardware.** Use chip-level RTS/CTS as described above, with
-   `OUTSTAT "COM1:"`, `RCVSTAT "COM1:",28,0` and `INIT "COM1:",1024`. A 1024-byte buffer has been
+   `OUTSTAT "COM1:"`, `RCVSTAT "COM1:",28,0` and `INIT "COM1:",1024`. With a full
+   cable add `SNDSTAT "COM1:",24,0`, so that the handshake also works when the
+   PC-1600 sends. A 1024-byte buffer has been
    confirmed on a real PC-1600 with a transfer of more than 50 KB.
 2. **Otherwise pace the host** so that the PC-1600 keeps up. Use a short delay after every byte
    or every line (the TRM suggests 0.1–1 s per line), or a lower baud rate. The PC-1600's
@@ -2666,7 +2668,7 @@ deleted by the driver.
 
 | Symptom | Likely cause |
 |---|---|
-| PC-1600 hangs when sending; BREAK needed | CTS required (power-on default) but not connected or off. Use `SNDSTAT "COM1:",28,0`. |
+| PC-1600 hangs when sending; BREAK needed | CTS required (power-on default, or `SNDSTAT …,24`) but the other side's RTS does not reach pin 5, or is off. Fix the wiring, or use `SNDSTAT "COM1:",28,0` on a cable without handshake lines. |
 | ERROR 143 after about 30 s | `SNDSTAT`/`RCVSTAT` written without a timeout: the ROM then uses 29.5 s / 31.5 s. Add `,0`. |
 | Nothing received, no error | Port not selected (`SETDEV`), `RCVSTAT` requires a line that is off (data are discarded), or wrong baud rate or format |
 | ERROR 142 during a host → PC-1600 transfer | Buffer overrun: host overshoots after XOFF/RTS (see above), or the baud rate is too high for the work done per character |
