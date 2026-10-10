@@ -810,9 +810,8 @@ in records of up to 256 bytes while it arrives (ROM).
 - The TRM gives minimums of 80 bytes at 4800–9600 baud, 130 at 19200 and 1100 at 38400.
 - For hosts "that do not suspend the data transmission even when the PC-1600 sends an XOFF"
   (TRM), it recommends **600 or more**, plus a 0.1–1 s pause after every line on the host.
-- A modern host whose flow control does not act in the adapter chip can overshoot far more. See [Receive buffer
-  size](#receive-buffer-size-why-4096-is-sometimes-not-enough) for why 4096 bytes is sometimes
-  not enough and what to use instead.
+- With a modern host and RTS/CTS or pacing, 1024 bytes are enough (see [Modern
+  hosts](#modern-hosts-usb-serial-adapters)).
 
 The cost is only temporary: `INIT` the buffer just before a transfer and give the memory back
 afterwards with `INIT "COM1:",0`.
@@ -2515,154 +2514,65 @@ the character set, and `&0F` (SI) switches back. The PC-1600 uses it to carry it
 over 7-bit links (see [chapter 12](#software-flow-control-xonxoff-and-shift-inout)). With
 8-bit links it is not needed.
 
-### Modern hosts: USB serial adapters, Linux and macOS
+### Modern hosts: USB serial adapters
 
-A PC-1600 is usually connected today to a USB serial adapter (FTDI, Prolific, Silicon Labs,
-WCH…). The driver details below are for the common **FTDI FT232R**, as found in the TTL-232R
-cables, with the standard drivers:
+**Connecting.**
 
-- Linux `ftdi_sio`.
-- macOS's built-in **AppleUSBFTDI**.
-- Not FTDI's own macOS driver, VCP 1.6.0. It forces the XON/XOFF characters to `&04`/`&05` and
-  never reports receive errors, so it is unsuitable here.
-
-They come from an analysis of the driver code and have not yet been tested against a PC-1600.
-Other adapters and drivers may differ.
-
-- **`COM1:`** needs an adapter with RS-232 polarity: idle and logical 1 = negative voltage.
-  - A real RS-232 adapter matches this directly.
-  - Logic-level (TTL) adapters can be used only if their data and handshake signals are
-    inverted. Some adapters can be configured that way; FTDI chips, for example, through their
-    configuration EEPROM.
+- **`COM1:`** needs RS-232 polarity: idle and logical 1 = negative voltage.
+  - A real RS-232 adapter matches directly.
+  - A logic-level (TTL) adapter works only with its data and handshake signals inverted, e.g.
+    an FTDI cable reprogrammed through its EEPROM.
   - The PC-1600's outputs swing to about −8.5 V. Check that the adapter's inputs tolerate this.
-- **`COM2:`** is at logic level (5 V). According to the TRM, its data lines carry the UART
-  signals **inverted** relative to a TTL UART. This is untested here.
-- **Baud rate:** the FT232R cannot go below about 183 baud, so the PC-1600's 50–150 baud settings
-  are unusable with it.
-  - macOS refuses such a rate.
-  - Linux sets a wrong rate without warning.
-- **Errors:** both drivers report parity and framing errors per USB packet of up to 62 bytes, not
-  per byte. Error checking on the host side is therefore coarse.
+- **`COM2:`** is at 5 V logic. According to the TRM its data are inverted relative to a TTL
+  UART. This is untested here.
+- **Baud rate:** the common FTDI FT232R cannot go below about 183 baud.
+- **Drivers:** use the operating system's built-in drivers: `ftdi_sio` on Linux, AppleUSBFTDI on
+  macOS. FTDI's own macOS VCP driver gets the XON/XOFF characters wrong and drops receive
+  errors.
 
-#### Why XON/XOFF "doesn't work": the bytes arrive as data
+**Use RTS/CTS.** Hardware flow control is the method that works reliably with a USB adapter,
+because the adapter chip enforces it itself. The FT232R does this with both standard drivers.
+The chip holds back the next character as soon as its CTS input goes off, so it meets the
+PC-1600's tight limit: only 7 more bytes fit after the "8 bytes free" stop. Any flow control
+that runs in the operating system reacts far too late, because kilobytes are already queued in
+the driver and the adapter.
 
-On Linux and macOS, software flow control is requested through the `termios` flags `IXON` (obey
-received XON/XOFF) and `IXOFF` (send them). Whether it is then done in the adapter chip or only
-in the operating system's terminal layer depends on the driver.
+| Side | Setting |
+|---|---|
+| PC-1600 | `OUTSTAT "COM1:"`, `SNDSTAT "COM1:",24,0`, `RCVSTAT "COM1:",28,0`, `INIT "COM1:",1024` |
+| Host | `CRTSCTS` (`stty crtscts`, pyserial `rtscts=True`); on macOS the full `CRTSCTS`, because AppleUSBFTDI ignores `CCTS_OFLOW` on its own |
+| Cable | PC-1600 RTS (pin 4) → adapter CTS; adapter RTS → PC-1600 CTS (pin 5); see the [direction table](#flow-control) |
 
-- **Most serial programs turn it off.** Programs that open the port in *raw* mode (`cfmakeraw`)
-  clear `IXON`. Most serial libraries also default to "no flow control", e.g. pyserial
-  (`xonxoff=False`) and Rust's `serialport` (`FlowControl::None`). The XOFF that the PC-1600 sends
-  is then **just another received byte**. It arrives in the application's data stream, typically
-  as a stray `&13` (and `&11`) between the data, and nothing stops sending.
-- **macOS quirk:** AppleUSBFTDI only passes the flow-control setting to the chip when DTR, RTS or
-  `IXOFF` change. **`IXON` on its own (`stty ixon -ixoff`) never reaches the chip**, so it has no
-  effect. Set `IXON` and `IXOFF` together; pyserial's `xonxoff=True` does this. Keep the standard
-  characters `&11`/`&13`, because changed characters reach the chip late or not at all.
-- **When it does reach the chip, it works quickly.** This is the case on Linux `ftdi_sio` with
-  `IXON` (correct since a 2018 kernel fix), and on macOS with `IXON`+`IXOFF`. The FT232R then
-  watches its receive line for XOFF and stops sending within a few characters. Data waiting in
-  the driver's and the chip's buffers stay there.
-- **Drivers that leave it to the OS react late.** Some other adapters' drivers only stop passing
-  *new* data to the driver, and everything already queued still goes out. On Linux that can be
-  4 KB of driver queue plus the chip's FIFO. The PC-1600 leaves only 7 bytes of room after its
-  "8 bytes free" XOFF, which this cannot meet. Only the XOFF after each 256-byte record of
-  `LOAD`/`INPUT#` leaves more room.
-- **The XON/XOFF bytes disappear from the host's data.** With XON/XOFF active, AppleUSBFTDI
-  deletes every received `&11`/`&13`, even data bytes. Binary data the PC-1600 *sends* to the
-  host are therefore corrupted. In the host → PC-1600 direction this does not matter.
-- **The unsolicited XON** at the start of every PC-1600 port command (chapter 12) shows up as a
-  leading `&11` in data captured on the host, unless XON/XOFF is active there or the host program
-  filters it.
-- If both are requested, **RTS/CTS wins**: on both systems `CRTSCTS` switches XON/XOFF off in
-  the chip.
+The PC-1600 raises RTS only while a port command runs. Start `LOAD`, `INPUT#` etc. on the
+PC-1600 first; the host then waits for it.
 
-**What works:**
+A 1024-byte buffer has been confirmed on a real PC-1600 with a transfer of more than 50 KB.
 
-- When the PC-1600 *sends* to the host, set `<xon>` = `N` on the PC-1600 and nothing is lost:
-  modern hosts are much faster than the PC-1600.
-- When the host *sends* text to the PC-1600, chip-level XON/XOFF is a workable fallback if
-  RTS/CTS is not wired. Check that the setting actually reaches the chip (see the macOS quirk
-  above).
-- For binary transfers use RTS/CTS or pacing, not XON/XOFF. See [Receive buffer
-  size](#receive-buffer-size-why-4096-is-sometimes-not-enough).
+**Fallback: paced sending without flow control.** Use this for cables without handshake lines
+(TXD, RXD, GND only).
 
-#### RTS/CTS with a USB adapter
+- On the PC-1600, `SNDSTAT "COM1:",28,0`; otherwise it waits forever for CTS when it sends.
+- In the direction PC-1600 → host nothing else is needed: the host is much faster.
+- In the direction host → PC-1600 the host must pace itself so that the PC-1600 keeps up. Send
+  with a short delay after every byte or every line (the TRM suggests 0.1–1 s per line), or
+  use a lower baud rate.
 
-Hardware flow control is the right tool, because the FT232R implements it **in the chip** on both
-systems. For the host → PC-1600 direction (first row of the [direction table](#flow-control)):
+**Not XON/XOFF.** Software flow control is unsuitable in practice, so set `<xon>` = `N` in
+`SETCOM`.
 
-- the host side enables it with `CRTSCTS` (`stty crtscts`, pyserial `rtscts=True`). On macOS set
-  the full `CRTSCTS`: AppleUSBFTDI ignores output CTS flow control (`CCTS_OFLOW`) set on its own;
-- the PC-1600's RTS (pin 4) is wired to the adapter's CTS;
-- the PC-1600 runs `OUTSTAT "COM1:"` (automatic mode) and `RCVSTAT "COM1:",28,0`.
+- Most host programs open the port raw and most serial libraries default to no flow control.
+  The PC-1600's XOFF (`&13`) and XON (`&11`) then simply arrive as data bytes, and the host
+  does not stop.
+- Where the driver does pass XON/XOFF to the adapter chip, macOS's driver also deletes every
+  `&11`/`&13` from the received data, which corrupts binary transfers.
+- The PC-1600's own XON at the start of each port command shows up as a stray `&11` in host
+  captures.
 
-The chip then holds back the next character as soon as the PC-1600's RTS goes off. FTDI does not
-document how many characters can still go out after CTS drops. It should be within the PC-1600's
-7-byte margin, and the stop after each 256-byte record leaves almost the whole buffer.
-
-Two caveats:
-
-- **Test before relying on it.** Send a file larger than the receive buffer, e.g. 8 KB with
-  `INIT "COM1:",1024`.
-  - A setup in which the host ignored CTS when sending to the PC-1600 was once reported with an
-    FTDI adapter on an Apple-Silicon Mac.
-  - Current AppleUSBFTDI does gate on CTS in the chip with `CRTSCTS`, so a driver bug is no
-    longer a likely explanation.
-  - More likely causes are a program that set only `CCTS_OFLOW`, or an older macOS version.
-- In automatic mode the PC-1600's RTS is **off whenever no port command is running**. The host
-  can only send while a `LOAD`, `INPUT#` or similar is active on the PC-1600. That is intended:
-  data sent earlier would be lost anyway.
-
-For the other direction (second row of the table), wire the adapter's RTS to the PC-1600's CTS
-(pin 5) and use `SNDSTAT "COM1:",24,0`. Without that wire, use `SNDSTAT "COM1:",28,0`.
-
-#### Receive buffer size: why 4096 is sometimes not enough
-
-**Observed:** when a host sends to the PC-1600, `INIT "COM1:",4096` often ends in ERROR 142, while
-8192 works. The ROM explains why:
-
-- The buffer only has to hold what the host sends **after the PC-1600 has asked it to stop**.
-- The PC-1600 asks after every 256-byte record (XOFF and/or RTS off), and again at 8 free bytes.
-- It then processes the record and waits about 13 character times before it reads on.
-- Meanwhile the interrupt keeps filling the buffer. When the buffer is full, further bytes are
-  lost, and the next read reports ERROR 142.
-
-How much the host overshoots decides what size is needed:
-
-| Host behaviour | Overshoot after "stop" | Buffer that works |
-|---|---|---|
-| Stops in the adapter chip: RTS/CTS, or XON/XOFF that reaches the chip | a few bytes | **512–1024** |
-| Stops in the OS only (drivers without chip-level flow control) | the driver queue plus the chip FIFO: on Linux up to about **4.4 KB** | about **6144**; 4096 is just too small |
-| Does not stop (flow control off, XOFF arrives as data); continuous sending | grows with every record: the PC-1600 is slower than the line, so the backlog grows over the whole transfer | larger than the **whole file**, with some margin |
-| Does not stop, but paced (delay after each byte or line) | small, if the pace is below what the PC-1600 can process | 1024–2048 |
-
-With an FT232R and its standard drivers, the second row does not occur. A "4096 fails, 8192
-works" pattern there means a host that does not stop at all (third row, or the fourth with a
-pace that is slightly too fast): 8192 is simply larger than the files being sent.
-
-**Memory cost.** The buffer is taken from the same free memory that the program being loaded
-needs. On a base PC-1600 (about 11.8 KB free) an 8 KB buffer leaves about 3.6 KB for the
-program, so `LOAD "COM1:"` of a larger program then fails for lack of memory, not with ERROR 142.
-
-**Recommendations**, in order of preference:
-
-1. **Make the host stop in hardware.** Use chip-level RTS/CTS as described above, with
-   `OUTSTAT "COM1:"`, `RCVSTAT "COM1:",28,0` and `INIT "COM1:",1024`. With a full
-   cable add `SNDSTAT "COM1:",24,0`, so that the handshake also works when the
-   PC-1600 sends. A 1024-byte buffer has been
-   confirmed on a real PC-1600 with a transfer of more than 50 KB.
-2. **Otherwise pace the host** so that the PC-1600 keeps up. Use a short delay after every byte
-   or every line (the TRM suggests 0.1–1 s per line), or a lower baud rate. The PC-1600's
-   processing speed does not change with the baud rate, so at 4800 baud or below the backlog
-   stays small. Then 1024–2048 bytes are enough. For text, chip-level XON/XOFF is an
-   alternative.
-3. **Only if neither is possible**, use a buffer larger than the file plus about 256 bytes. Release
-   the memory right after the transfer with `INIT "COM1:",0`. A power-off releases it too.
-
-For binary transfers, turn XON/XOFF off on both sides (`SETCOM …,N,N` on the PC-1600, no
-`IXON`/`IXOFF` on the host). Otherwise `&11`/`&13` data bytes are mistaken for flow control or
-deleted by the driver.
+**Buffer size.** With RTS/CTS or adequate pacing, `INIT "COM1:",1024` is enough. If a transfer
+needs a bigger buffer than that, the flow control is not working or the pacing is too fast; fix
+that rather than enlarging the buffer. A larger buffer also takes memory from the program being
+loaded: `LOAD "COM1:"` needs room for the program *and* the buffer. `INIT "COM1:",0` gives the
+memory back after a transfer.
 
 ### Checklist for a failed transfer
 
@@ -2671,7 +2581,7 @@ deleted by the driver.
 | PC-1600 hangs when sending; BREAK needed | CTS required (power-on default, or `SNDSTAT …,24`) but the other side's RTS does not reach pin 5, or is off. Fix the wiring, or use `SNDSTAT "COM1:",28,0` on a cable without handshake lines. |
 | ERROR 143 after about 30 s | `SNDSTAT`/`RCVSTAT` written without a timeout: the ROM then uses 29.5 s / 31.5 s. Add `,0`. |
 | Nothing received, no error | Port not selected (`SETDEV`), `RCVSTAT` requires a line that is off (data are discarded), or wrong baud rate or format |
-| ERROR 142 during a host → PC-1600 transfer | Buffer overrun: host overshoots after XOFF/RTS (see above), or the baud rate is too high for the work done per character |
+| ERROR 142 during a host → PC-1600 transfer | Buffer overrun: the host does not stop (flow control not working, or pacing too fast), or the baud rate is too high for the work done per character |
 | Stray `&11`/`&13` bytes in host captures | XON/XOFF on at the PC-1600 (`X`) but off on the host (or, on macOS, only `IXON` set). Set `N` on the PC-1600. |
 | Host ignores the PC-1600's RTS | Host flow control not enabled in the chip: use the full `CRTSCTS`, check the wiring (PC-1600 pin 4 → adapter CTS) |
 | Garbled 8-bit characters | 7 data bits set; use 8, or `S` with a host that understands SI/SO |
