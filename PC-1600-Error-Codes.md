@@ -103,13 +103,15 @@ PC-1500 peripheral codes (40–80) also apply — see the [PC-1500 Error Codes](
 
 ## Serial I/O port errors (`COM1:` and `COM2:`)
 
+Details and causes: [PC-1600 BASIC Reference, chapter 12](PC-1600-BASIC-Reference.md#errors).
+
 | Code | Cause |
 |------|-------|
 | **140** | Invalid parameters in `SETCOM` |
-| **141** | Receive buffer in `INIT` too large (> 16383 bytes or > available memory) |
-| **142** | Data-reception error on a serial port (parity, overrun, framing, or receive-buffer-full) |
-| **143** | Timeout — no response within the value set by `RCVSTAT` |
-| **144** | Serial port in `SETDEV` is already open |
+| **141** | Not enough free memory for the receive buffer requested with `INIT "COMn:"` (a size outside 80–16383 gives ERROR 19) |
+| **142** | Data-reception error on a serial port: parity, overrun, framing, receive buffer full (data lost), or a break received; for `INPUT#`/`LOAD`/`COPY` also the `RCVSTAT` timeout. Reported on the next read. |
+| **143** | Timeout: the lines required by `SNDSTAT` did not come on, or no XON followed an XOFF, within the `SNDSTAT` time; for `INPUT` via `SETDEV …,KI` also the `RCVSTAT` timeout |
+| **144** | A serial port file is already open (at `OPEN "COMn:"` or `SETDEV`) — `CLOSE` it first |
 
 ---
 

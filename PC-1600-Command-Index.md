@@ -181,21 +181,24 @@ of the PC-1600 BASIC Reference. Commands marked **(new vs PC-1500)** did not exi
 | [RMT ON/OFF](PC-1600-BASIC-Reference.md#rmt-on--off) | Enable/disable tape remote control |
 
 ### Serial communications — **(new vs PC-1500)**
+Overview, defaults and practical use: [chapter 12](PC-1600-BASIC-Reference.md#12-access-to-serial-ports) and [Serial communication in practice](PC-1600-BASIC-Reference.md#serial-communication-in-practice).
+
 | Command | Purpose |
 |---------|---------|
 | [COM$](PC-1600-BASIC-Reference.md#com--pc-1600) | Return the communication parameters |
 | [DEV$](PC-1600-BASIC-Reference.md#dev--pc-1600) | Return the current SETDEV output routing |
+| [INIT "COMn:"](PC-1600-BASIC-Reference.md#init--pc-1600) | Set the serial receive-buffer size |
 | [INSTAT](PC-1600-BASIC-Reference.md#instat--pc-1600) | Return control-signal states for a serial port |
 | [LPRINT / LPRINT USING](PC-1600-BASIC-Reference.md#lprint--lprint-using) | Output data to the printer or a serial port |
 | [OUTSTAT](PC-1600-BASIC-Reference.md#outstat--pc-1600) | Set control-signal states for serial ports |
 | [PCONSOLE](PC-1600-BASIC-Reference.md#pconsole--pc-1600) | Set print format / EOL code for printer or ports |
 | [PZONE](PC-1600-BASIC-Reference.md#pzone--pc-1600) | Set the print zone for printer or serial port |
-| [RCVSTAT](PC-1600-BASIC-Reference.md#rcvstat--pc-1600) | Set receive protocol / timeout for a serial port |
+| [RCVSTAT](PC-1600-BASIC-Reference.md#rcvstat--pc-1600) | Set receive condition (lines that must be on) / timeout |
 | [RXD$](PC-1600-BASIC-Reference.md#rxd--pc-1600) | Return current data from a serial port |
 | [SETCOM](PC-1600-BASIC-Reference.md#setcom--pc-1600) | Set communication protocol for the serial ports |
-| [SETDEV](PC-1600-BASIC-Reference.md#setdev--pc-1600) | Select a serial port for output |
+| [SETDEV](PC-1600-BASIC-Reference.md#setdev--pc-1600) | Select a serial port; route LPRINT/INPUT to it |
 | [SNDBRK](PC-1600-BASIC-Reference.md#sndbrk--pc-1600) | Send break characters to a serial port |
-| [SNDSTAT](PC-1600-BASIC-Reference.md#sndstat--pc-1600) | Set send protocol / timeout for a serial port |
+| [SNDSTAT](PC-1600-BASIC-Reference.md#sndstat--pc-1600) | Set send handshake (lines that must be on) / timeout |
 
 ### Printer / plotter (CE-1600P, or CE-150 in MODE 1)
 | Command | Purpose |

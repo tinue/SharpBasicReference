@@ -470,59 +470,438 @@ device-full / file errors.
 
 ### 12. Access to Serial Ports
 
-The two ports — **`COM1:`** (RS-232C) and **`COM2:`** (optical) — are treated by BASIC as
-sequential I/O devices; **`COM:`** is whichever is currently accessed. Control commands:
-`COMn ON/OFF/STOP`, `PCONSOLE`, `INIT`, `INSTAT`, `ON COMn GOSUB`, `ON PHONE GOSUB`, `OUTSTAT`,
-`PHONE ON/OFF/STOP`, `RCVSTAT`, `SETCOM`, `SETDEV`, `SNDBRK`, `SNDSTAT`, `PZONE`.
+> **Sources.** The Operation Manual (chapters 6 and 12, and the dictionary pages) is the base text.
+> It was cross-checked against the German *Bedienungsanleitung*, the Technical Reference Manual
+> (TRM, §3.6, §5.7, §5.8), Holtkötter's German TRM edition and Ditze-vonOheimb's
+> *Systemhandbuch*. Where these disagree or say nothing, the annotated PC-1600 ROM disassembly
+> decides; such facts are marked **(ROM)**. Bits are numbered from 0 here (bit 0 = value 1). The
+> Operation Manual numbers them from 1 on the SNDSTAT, RCVSTAT and INSTAT pages, so its "bit 3"
+> is bit 2 here. Background on handshaking, and on connecting the PC-1600 to a modern computer,
+> is in [Serial communication in practice](#serial-communication-in-practice).
 
-#### Specifying the port
+#### The two ports
 
-**`SETDEV`** selects `COM1:` or `COM2:` for all subsequent communication commands until the next
-`SETDEV`. It also redirects the printer commands (`LLIST`, `LFILES`, `LPRINT` — normally the
-printer at power-on) to the chosen port, and directs them back to the printer (closing both ports).
-`DEV$` shows the current `SETDEV` settings. `SAVE` / `LOAD` transfer whole files over a port.
+The PC-1600 has two serial connectors but only **one** serial controller (a Toshiba TC8576F
+UART). Only one port can be active at a time. Selecting a port switches the controller over to
+it.
 
-#### Protocol options
+| | **`COM1:`** — RS-232C | **`COM2:`** — SIO |
+|---|---|---|
+| Connector | 15-pin, left side | 5-pin, labelled **SIO**, right side |
+| Signal levels | RS-232C polarity, about **+6 V / −8.5 V** (not ±12 V) | 5 V logic; the optics are in the **CE-1600L** fibre-optic cable plug |
+| Lines | TXD, RXD, RTS, CTS, DSR, CD, CI, DTR, GND | SD, RD, GND, Vcc (no handshake lines) |
+| Hardware handshake (`SNDSTAT`/`RCVSTAT` protocol, `OUTSTAT`, `INSTAT`) | yes | **no** — only the timeouts apply |
+| Ring / modem interrupt (`PHONE`, `ON PHONE GOSUB`, `WAKE$(1)`) | yes (CI, pin 9) | no |
+| Power | draws extra current (line-driver supply on while selected) | low |
+| SETCOM default | `1200,8,N,1,X,S` | `38400,7,E,2,X,S` |
+| Selected at power-on | — | **yes** |
 
-Handshake protocol: **`SNDSTAT`** for sending, **`RCVSTAT`** for receiving. Individual outgoing
-control-signal states: **`OUTSTAT`** (leaves the machine ready for simple transmission if no
-parameters given). **`INSTAT`** shows current receive-protocol settings.
+**RS-232C connector (`COM1:`)**
 
-#### Communication parameters (`SETCOM`, read back with `COM$`)
+| Pin | Signal | Dir | Notes |
+|---|---|---|---|
+| 2 | TXD (SD) — transmit data | out | |
+| 3 | RXD (RD) — receive data | in | |
+| 4 | RTS (RS) — request to send | out | set by `OUTSTAT`; in automatic mode it means "PC-1600 ready to receive" |
+| 5 | CTS (CS) — clear to send | in | by default **must be on before the PC-1600 sends** (`SNDSTAT`) |
+| 6 | DSR (DR) — data set ready | in | |
+| 7 | SG — signal ground | — | |
+| 8 | CD — carrier detect | in | |
+| 9 | CI — calling (ring) indicator | in | can switch the computer on (`WAKE$(1)`) and raise `ON PHONE GOSUB` |
+| 10 | Vcc | out | 4–4.7 V while the computer is on |
+| 14 | DTR (ER) — data terminal ready | out | set by `OUTSTAT` |
 
-1. Baud rate 50–38400
-2. Word length 5–8 bits
-3. Parity even / odd / none
-4. Stop bits 1 or 2
-5. XON/XOFF on/off
-6. Shift in/out on/off
+Pins 1, 11–13 and 15 are not used. The RTS and DTR outputs should each drive only one input
+(load 3–7 kΩ).
 
-Baud-rate ceilings by use: `SAVE`/`LOAD`/`BSAVE`/`BLOAD` and `COPY` to/from a port — **9600** on
-`COM1:`, **38400** on `COM2:`. `INPUT`/`INPUT#`/`PRINT#`/`LLIST`/`LPRINT` — **4800** on both.
+**SIO connector (`COM2:`)**: 1 = RD (in), 2 = GND, 3 = SD (out), 4 and 5 = Vcc (4–5.5 V while
+on, to power the optical transceiver). The CE-1600L cable, or the CE-1602T SIO/RS-232C
+converter, attaches here.
 
-#### Receive buffer
+**Device names.** `"COM1:"` and `"COM2:"` name a port explicitly. `"COM:"` means **the port
+currently selected**, i.e. the one chosen by the last `SETDEV` or `OPEN`. `SETDEV` itself does
+not accept `"COM:"` (**ERROR 155**, ROM).
 
-Incoming data lands in a receive buffer whose size is set with **`INIT`**.
+#### Which command does what
+
+| Command | Role | `COM1:` | `COM2:` | Survives power-off |
+|---|---|---|---|---|
+| [`SETCOM`](#setcom--pc-1600) / [`COM$`](#com--pc-1600) | Line format: baud, bits, parity, stop bits, XON/XOFF, shift in/out | ✓ | ✓ | **yes** (each port has its own set) |
+| [`SETDEV`](#setdev--pc-1600) | **Select** the port (switches the hardware) and optionally route `LPRINT`/`LLIST`/`LFILES` (`PO`) and `INPUT` (`KI`) to it | ✓ | ✓ | no — back to `COM2:`, printer, keyboard |
+| [`INIT "COMn:"`](#init--pc-1600) | Size of the receive buffer (one buffer, shared by both ports) | ✓ | ✓ | no — back to 40 bytes |
+| [`SNDSTAT`](#sndstat--pc-1600) | **Send** side: which input lines must be on before each byte goes out; send timeout | ✓ | timeout only | no |
+| [`RCVSTAT`](#rcvstat--pc-1600) | **Receive** side: which input lines must be on for a received byte to be *kept*; receive timeout | ✓ | timeout only | no |
+| [`OUTSTAT`](#outstat--pc-1600) | Drive the **outputs** RTS and DTR: automatic (no value) or fixed (0–3) | ✓ | ignored | no — back to automatic |
+| [`INSTAT`](#instat--pc-1600) | **Read** all six handshake lines | ✓ | always 0 | — |
+| [`PCONSOLE`](#pconsole--pc-1600) / [`PZONE`](#pzone--pc-1600) | Line length, end-of-line code and comma zones for `LPRINT`/`LLIST`/`LFILES` | ✓ | ✓ | yes (per port) |
+| [`SNDBRK`](#sndbrk--pc-1600) | Send break characters | ✓ | ✓ | — |
+| [`RXD$`](#rxd--pc-1600) | Take one received character from the buffer, without waiting | ✓ | ✓ | — |
+| [`COMn ON/OFF/STOP`](#comn-on--off--stop--pc-1600), [`ON COMn GOSUB`](#on-comn-gosub--pc-1600) | Interrupt when a character arrives | ✓ | ✓ | — |
+| [`PHONE ON/OFF/STOP`](#phone-on--off--stop--pc-1600), [`ON PHONE GOSUB`](#on-phone-gosub--pc-1600), [`WAKE$(1)`](#wake--pc-1600) | React to the CI (ring) line | ✓ | — | — |
+
+The power-off column is **(ROM)**. SETCOM values return to their defaults only with ALL RESET
+(manual). Because SETDEV, INIT, SNDSTAT, RCVSTAT and OUTSTAT are all reset at power-off, a program
+that communicates should set them itself, every time it starts (see [A typical
+set-up](#a-typical-set-up)).
+
+#### Selecting a port: `SETDEV`, `OPEN`, `COM:`
+
+`SETDEV "COMn:"[,PO][,KI]` selects the port. The ROM then does the following:
+
+1. It switches the controller to that port. Selecting `COM1:` powers the RS-232C line drivers;
+   they stay powered until `COM2:` is selected or the computer is switched off. `CLOSE` does not
+   switch them off. The manual advises returning to `COM2:` after RS-232C work to save the
+   batteries.
+2. It waits about 0.1 s for the supply to settle.
+3. It loads the port's `SETCOM` parameters into the controller.
+4. It **clears the receive buffer and any pending receive error.**
+
+The options set the routing:
+
+- **`PO`** sends `LPRINT`, `LLIST` and `LFILES` to the port instead of the printer.
+- **`KI`** makes `INPUT` read from the port instead of the keyboard. No prompt string is allowed,
+  and no `?` is sent.
+- `SETDEV "COMn:"` **without** options still selects the port, but routes `LPRINT` back to the
+  printer and `INPUT` back to the keyboard.
+
+The options may appear in either order. Anything other than `PO` or `KI` gives ERROR 158 (ROM).
+
+`OPEN "COMn:" …` also selects the port (and clears the buffer), keeping the current `PO`/`KI`.
+Only **one** port file can be open at a time. While it is open, a further `OPEN` or `SETDEV`
+gives **ERROR 144**. A `SETDEV` on its own does not count as "open", so `SETDEV` can be repeated
+freely. `APPEND` is not allowed on a port.
+
+The manual says that `SETDEV` *without any device* "releases current device settings and
+reverts to the printer for output and keyboard for input". The native PC-1600 `SETDEV` code
+only accepts a quoted device name, though. Without one, the statement is handed on to the
+PC-1500/CE-158 command tables (ROM). Prefer `SETDEV "COM2:"`, which reliably releases `PO`/`KI`
+and also switches the RS-232C drivers off. The same applies to `DEV$`: its keyword is the
+CE-158 token, and the ROM has no native PC-1600 handler for it. Both are **unverified on
+hardware**.
+
+#### Line format: `SETCOM`, `COM$`
+
+```
+SETCOM "COMn:",[<baud>],[<bits>],[<parity>],[<stop>],[<xon>],[<shift>]
+```
+
+| Field | Values | Notes **(ROM)** |
+|---|---|---|
+| `<baud>` | **50–38400** | Any integer in range is accepted. The controller can only produce 76800 ÷ *n*, so the value is rounded to the nearest such rate: 14400 → **15360**, 28800 → **25600**, 110 → 110.03. All other standard rates from 50 to 38400 are exact. `COM$` shows the rate actually set. This is the **only field that may be an expression or variable.** |
+| `<bits>` | `5` `6` `7` `8` | Must be written as a literal character, like the fields below. A variable is not allowed. |
+| `<parity>` | `N` `E` `O` | none / even / odd |
+| `<stop>` | `1` `2` | |
+| `<xon>` | `X` `N` | software flow control XON/XOFF on / off (see below) |
+| `<shift>` | `S` `N` | shift-in/shift-out encoding of 8-bit characters. **Only effective with 7 data bits**; with 8 bits `S` does nothing. |
+
+- Omitted fields keep their current value: `SETCOM "COM1:",,,E` changes only the parity.
+  `SETCOM "COMn:"` with no fields at all resets that port to `1200,8,N,1,X,S` (ROM). That is the
+  COM1 default, and it is used for COM2 too.
+- An illegal value gives **ERROR 140**.
+- Both ports accept the same values. There is **no per-port restriction**.
+- If the named port is the one currently selected, the controller is reprogrammed at once, and
+  the receive buffer and error flags are **cleared**. Settings for the other port are stored and
+  take effect the next time that port is selected (ROM).
+- The settings survive power-off. Only ALL RESET restores the defaults (COM1
+  `1200,8,N,1,X,S`, COM2 `38400,7,E,2,X,S`).
+
+`COM$ "COMn:"` returns the current settings as text, in `SETCOM` order, e.g.
+`"9600,8,N,1,N,N"`. `"COM:"` = the selected port.
+
+**Which settings are usable for what** (manual; the ROM checks none of it):
+
+- Binary `SAVE`/`LOAD`/`BSAVE`/`BLOAD` through a port need **8 data bits**. The manual also asks
+  for shift in/out `N`, which only matters with 7 bits.
+- ASCII `SAVE …,A`/`LOAD`, `PRINT#` and `INPUT#` work with any format.
+- Recommended maximum baud rates:
+
+  | Use | `COM1:` | `COM2:` |
+  |---|---|---|
+  | `SAVE`, `LOAD`, `BSAVE`, `BLOAD`, `COPY` | 9600 | 38400 |
+  | `INPUT`, `INPUT#`, `PRINT#`, `LLIST`, `LPRINT` | 4800 | 4800 |
+
+  These are reliability limits, not enforced ones. Above them the PC-1600 may fail to keep up
+  with incoming data, and the result is ERROR 142.
+- The manual calls SIO half-duplex: do not send and receive at the same time on `COM2:`.
+
+#### Handshake lines: `SNDSTAT`, `RCVSTAT`, `OUTSTAT`, `INSTAT`
+
+These four commands cover the hardware handshake. They are only meaningful on `COM1:`, because
+`COM2:` has no handshake lines. Their roles are often confused:
+
+| Command | Acts on | Question it answers |
+|---|---|---|
+| `SNDSTAT` | **inputs** CTS / CD / DSR | "Which of the other side's lines must be on before I *send* a byte?" — real flow control for the direction PC-1600 → other side |
+| `RCVSTAT` | **inputs** CTS / CD / DSR | "Which lines must be on for a received byte to be *accepted*?" — a filter, **not** flow control: bytes arriving while a required line is off are **silently thrown away** |
+| `OUTSTAT` | **outputs** RTS / DTR | "What do I signal to the other side?" — in automatic mode RTS tells the other side to pause when the receive buffer is (nearly) full: flow control for the direction other side → PC-1600 |
+| `INSTAT` | all six lines | "What is the current state?" (read-only) |
+
+Which line serves which transfer direction is summarised in the [direction table](#flow-control).
+
+##### `SNDSTAT` and `RCVSTAT`
+
+```
+SNDSTAT "COMn:",<protocol>[,<timeout>]
+RCVSTAT "COMn:",<protocol>[,<timeout>]
+```
+
+`<protocol>` (0–255) is a bit mask. Only three bits are used. **A 0 bit means "this line must be
+on (high)"; a 1 bit means "don't care".**
+
+| Bit (value) | Line | Manual's numbering |
+|---|---|---|
+| 2 (4) | CTS | "bit 3" |
+| 3 (8) | CD | "bit 4" |
+| 4 (16) | DSR | "bit 5" |
+
+The ROM masks the value with `&1C` and ignores all other bits. The manual's "set unused bits to
+0" values and the TRM's "set them to 1" values are therefore the same setting:
+
+| Wanted | Manual style | TRM style (often seen) |
+|---|---|---|
+| Ignore all lines | **28** | 63 |
+| CTS must be on | **24** | 59 |
+| CD must be on | **20** | 55 |
+| DSR must be on | **12** | 47 |
+| CTS, CD and DSR | **0** | 35 |
+
+The manual's own example `45` is described as "RTS and DSR must be high". It actually means **DSR
+only**; RTS is an output and cannot be tested.
+
+`<timeout>` is 1–255 in units of 0.5 s (max. 127.5 s); **0 = wait forever**.
+
+- **SNDSTAT timeout:** how long to wait for the required lines, and for an XON after an XOFF from
+  the other side. Then **ERROR 143**. The time is counted **per byte**, not per statement.
+- **RCVSTAT timeout:** how long a reading command waits while the buffer is empty. Counted per
+  byte.
+
+**Defaults at power-on (ROM):**
+
+- **Send:** **CTS required**, timeout infinite (= `SNDSTAT "COM1:",24,0`). A PC-1600 whose CTS
+  is not connected, or held off, therefore **hangs on the first byte it sends**, until **BREAK**
+  is pressed. That is the "lock-up" the manual warns about.
+- **Receive:** no lines required, timeout infinite (= `RCVSTAT "COM1:",28,0`).
+
+**Always give both parameters.** The comma after the device is mandatory. If `<protocol>` or
+`<timeout>` is omitted, the ROM does **not** fall back to the defaults above. Instead:
+
+- An omitted protocol becomes **4**, which requires **CD and DSR** to be on.
+- An omitted timeout becomes **63 (31.5 s) for RCVSTAT** and **59 (29.5 s) for SNDSTAT**.
+
+This looks like a ROM bug: those two numbers are exactly the TRM's default *protocol* values.
+So `SNDSTAT "COM1:",24` sends with a 29.5 s timeout, not an infinite one. The TRM's
+example `SNDSTAT "COM1:",,20` waits for CD and DSR, not for CTS. Write `SNDSTAT "COM1:",24,0`.
+
+On `COM2:` the protocol is accepted but ignored. Only the timeout is stored.
+
+##### `OUTSTAT`
+
+```
+OUTSTAT "COM1:"[,<setting>]
+```
+
+**With `<setting>`** the outputs are fixed (*manual mode*). All automatic RTS/DTR changes are then
+disabled until the next `OUTSTAT` without a value. Only bits 0–1 count, so 4 ≡ 0 (ROM).
+
+| `<setting>` | RTS | DTR |
+|---|---|---|
+| 0 | on (high) | on (high) |
+| 1 | on | off (low) |
+| 2 | off | on |
+| 3 | off | off |
+
+**Without `<setting>`** the port returns to **automatic mode** (the power-on state). RTS and DTR
+first go off. From then on:
+
+| Situation | RTS | DTR |
+|---|---|---|
+| idle | off | off |
+| while a port command runs (`SAVE`, `LOAD`, `BSAVE`, `BLOAD`, `LLIST`, `LPRINT`, `INPUT` via `KI`, `SNDBRK`) or while a port file is `OPEN` | on | on |
+| receive buffer down to **8 free bytes** | **off** (pause request) | — |
+| after every 256-byte record read by `LOAD`, `INPUT#` or `COPY` | **off** while the record is processed | — |
+| buffer drained to 8 unread bytes, or empty | on again | — |
+
+At the end of a command, or on `CLOSE`, the ROM waits until the last byte has left the
+controller and then turns RTS and DTR off. So in automatic mode RTS works as "PC-1600 ready to
+receive" (modern RTS/CTS flow control). On `COM2:`, `OUTSTAT` does nothing (ROM).
+
+##### `INSTAT`
+
+`INSTAT "COM1:"` returns the current state of all handshake lines, **0 = on (high), 1 = off
+(low)**:
+
+| Bit (value) | 0 (1) | 1 (2) | 2 (4) | 3 (8) | 4 (16) | 5 (32) | 6, 7 |
+|---|---|---|---|---|---|---|---|
+| Line | DTR (own output) | RTS (own output) | CTS | CD | DSR | CI | always 0 |
+
+`63` means all six lines are off. That is the normal idle reading with nothing connected. Test a
+single line with `AND`, e.g. `IF (INSTAT "COM1:" AND 4)=0 THEN` (CTS is on).
+
+- The manual's remark "bit 1 is the leftmost bit" is wrong; bit 1 is the rightmost.
+- On `COM2:` (or `"COM:"` with COM2 selected) the result is always **0** (ROM). Do not read that
+  as "all lines on".
+
+#### Software flow control (XON/XOFF) and shift in/out
+
+With `<xon>` = `X` the PC-1600 uses the control codes **XON = `&11`** (DC1, "go on") and
+**XOFF = `&13`** (DC3, "pause") in addition to any hardware handshake. All of the following is
+**(ROM)** unless noted.
+
+**When the PC-1600 receives:**
+
+- It sends **XOFF** when only **8 free bytes** are left in the receive buffer. The level is fixed,
+  whatever the buffer size, so the other side must stop within 7 bytes.
+- `LOAD`, `INPUT#` and `COPY` from a port also send XOFF after **every 256-byte record**. The
+  PC-1600 then processes the record and pauses for about 13 character times.
+- It sends **XON** when a reading command has drained the buffer to 8 unread bytes, or finds it
+  empty.
+- Right after the port is selected or opened (`SETDEV`, `OPEN`, `SAVE`, `LOAD`, `LLIST`,
+  `LPRINT`, `INPUT`, also `SETCOM` on the selected port), it sends one **unsolicited XON** the
+  first time it finds the buffer empty. The TRM documents this. A host that does not filter it
+  sees a stray `&11` at the start of the data. To avoid it, open the port with `N` and switch to
+  `X` with `SETCOM` afterwards (TRM).
+- Received `&11`/`&13` are **removed** from the data with `X`, and passed through as data with
+  `N`. In a **binary** file transfer they are always passed as data.
+
+**When the PC-1600 sends:** with `X`, a received XOFF pauses transmission before the next byte,
+until XON arrives. The wait is limited by the **SNDSTAT** timeout (then ERROR 143).
+
+**Shift in/out** (`<shift>` = `S`) carries 8-bit characters, such as the PC-1600's graphics and
+katakana codes, over a **7-bit** line:
+
+- **Sending:** before a character ≥ `&80` the PC-1600 sends **SO = `&0E`**, then transmits the
+  character's low 7 bits. Before the next character < `&80`, and always before CR, it sends
+  **SI = `&0F`**.
+- **Receiving:** while shifted, codes `&21`–`&7E` get bit 7 set again. SO and SI themselves are
+  removed.
+
+It is only active with **7 data bits**, and never during binary file transfers. With 8 data bits
+(the COM1 default) the `S` is harmless.
+
+`XON`, `XOFF`, `SI` and `SO` also trigger `ON COMn GOSUB` (TRM), although they never reach the
+program. With `KEYSTAT 2` (serial keyboard, see the TRM) the codes `&11` and `&13` of the F1 and
+F3 keys collide with XON/XOFF.
+
+#### Receive buffer: `INIT "COMn:"`
+
+```
+INIT "COMn:",<size>
+```
+
+Every byte that arrives on the selected port is stored by an interrupt in a ring buffer, until a
+command reads it.
+
+- `<size>` **0** (or omitted) selects the built-in **40-byte** buffer. It lives in system RAM and
+  costs no program memory. Otherwise `<size>` must be **80–16383**: out of range → **ERROR 19**
+  (ROM; the manual says 141). The buffer holds `<size>` − 1 bytes.
+- A larger buffer is taken from the free memory of the internal RAM (`S0:`), next to the
+  `MAXFILES` file buffers. **ERROR 141** = not enough free memory.
+- There is **one** buffer for both ports. `INIT "COM1:"` and `INIT "COM2:"` set the same buffer.
+- `INIT` empties the buffer and clears the error flags.
+- It is refused while **any** file is open (ERROR 154, ROM) and inside `FOR…NEXT`.
+- At **power-off** the size returns to 40 bytes and the memory is released (ROM; the manual says
+  "at power on").
+
+**How large?** The buffer must absorb whatever the other side still sends after the PC-1600 has
+asked it to stop. It never needs to hold a whole file: `LOAD`, `INPUT#` and `COPY` take the data
+in records of up to 256 bytes while it arrives (ROM).
+
+- The manual suggests 256 bytes as typical.
+- The TRM gives minimums of 80 bytes at 4800–9600 baud, 130 at 19200 and 1100 at 38400.
+- For hosts "that do not suspend the data transmission even when the PC-1600 sends an XOFF"
+  (TRM), it recommends **600 or more**, plus a 0.1–1 s pause after every line on the host.
+- A modern host whose flow control does not act in the adapter chip can overshoot far more. See [Receive buffer
+  size](#receive-buffer-size-why-4096-is-sometimes-not-enough) for why 4096 bytes is sometimes
+  not enough and what to use instead.
+
+The cost is only temporary: `INIT` the buffer just before a transfer and give the memory back
+afterwards with `INIT "COM1:",0`.
 
 #### Output to a port
 
-Usable commands: `CHR$`, `LFILES`, `LLIST`, `LPRINT` / `LPRINT USING`, `OPEN`, `PRINT#` /
-`PRINT# USING`, `PZONE`, `SAVE`.
+- **Text via the printer commands:**
+  1. `SETDEV "COMn:",PO`.
+  2. Optionally `PZONE "COMn:",<width>` (comma zones, 8–255, default 20) and
+     `PCONSOLE "COMn:",<line length>,<EOL>`. The line length is 16–255, with 0 = no splitting
+     (the default). The EOL code is 0 = CR (default), 1 = LF, 2 = CR+LF.
+  3. `LPRINT`, `LLIST`, `LFILES`.
+  4. Release with `SETDEV "COMn:"` or `SETDEV "COM2:"`.
 
-- **Programs / data via printer commands:** `SETDEV` (with the port-output option) → `PZONE` sets
-  `LPRINT` format → `PCONSOLE` sets line length and EOL code → `LLIST` sends the listing.
-- **As a file:** `MAXFILES` → `OPEN` the port for output with a number → `PRINT#` / `PRINT# USING`
-  → `CLOSE`.
-- **A whole file:** `SAVE` the file directly to the port.
-- **Control codes:** `CHR$` — e.g. `10 LPRINT CHR$(4)` sends ASCII EOT after the port is opened.
+  Control codes go out with `LPRINT CHR$(…)`. In graphics mode `LPRINT` adds no CR/LF.
+  `LLIST*` to a port truncates lines numbered 100 and above, so use two-digit line numbers.
+- **As a file:** `MAXFILES` → `OPEN "COMn:" FOR OUTPUT AS #f` → `PRINT #f` / `PRINT #f USING` →
+  `CLOSE #f`. Data go out in blocks of 256 bytes; the last block is sent on `CLOSE`. Lines end in
+  **CR+LF** whatever `PCONSOLE` says, and the end of the file is marked with **`&1A`**.
+- **A whole file:** `SAVE "COMn:",A` sends the program in memory as ASCII text: CR+LF line ends,
+  `&1A` at the end. `SAVE "COMn:"` without `,A` and `BSAVE "COMn:",…` send the binary format: a
+  16-byte header starting with `&FF`, followed by the image (ROM). That format is only
+  understood by another PC-1600 or by software written for it. `COPY "S1:NAME.BAS" TO "COM1:"`
+  sends a stored file without loading it.
+- **Break:** `SNDBRK "COMn:",<n>` holds the line in the break state for *n* character times
+  (1–255) at the current format, e.g. 8.3 ms each at 1200 baud with 10 bits per character (ROM).
+  The port must be the selected one. Send several breaks, because the other side may miss the
+  first.
 
 #### Input from a port
 
-Usable commands: `INIT`, `INPUT#`, `LOAD`, `OPEN`, `PCONSOLE`, `RXD$`, `SNDBRK`.
+- **Lines with `INPUT`:** `SETDEV "COMn:",KI`, then `INPUT A$,B` reads comma-separated items.
+  Any CR or CR+LF ends the input.
+- **As a file:** `MAXFILES` → `INIT` → `OPEN "COMn:" FOR INPUT AS #f` → `INPUT #f, …` (`EOF(f)`
+  becomes true at `&1A`) → `CLOSE #f`.
+- **A whole file:** `LOAD "COMn:"` (add `,R` to run it). An ASCII program is expected to have
+  CR+LF line ends and a final `&1A`. The binary format is detected by its first byte `&FF`
+  (ROM). `BLOAD "COMn:"` and `COPY "COM1:NAME.BAS" TO "S1:NAME.BAS"` work the same way.
+- **Single characters:** `RXD$` returns the next character in the buffer **as a one-character
+  string** and removes it from the buffer. It never waits. With nothing received it returns two
+  blanks; after a receive error it returns `"?"` plus two blanks, and **clears the buffer and the
+  error** (ROM). The manual's "hexadecimal string" wording is misleading.
+- **Event-driven:** `ON COMn GOSUB <line>` plus `COMn ON` branches whenever a character arrives
+  on port *n*. This includes XON/XOFF/SI/SO, and bytes that `RCVSTAT` then discards. End the
+  routine with `RETI`, and fetch the data with `RXD$`.
 
-- **Data:** `MAXFILES` → `INIT` (buffer size) → `OPEN` the port `FOR INPUT` as a file → `INPUT#`
-  → `CLOSE`.
-- **A whole file:** `LOAD` from the port, as from disk.
+#### Errors
+
+| Code | Meaning | When **(ROM)** |
+|---|---|---|
+| **140** | Invalid `SETCOM` parameter | at the `SETCOM` |
+| **141** | Not enough free memory for the `INIT` buffer | at the `INIT` |
+| **142** | Receive error: parity, framing, overrun (a byte arrived before the previous one was fetched), **buffer full** (data lost), or a **break** received. With `INPUT#`, `LOAD` and `COPY` also the **receive timeout**. | on the **next read**, even if correctly received data are still in the buffer |
+| **143** | Timeout: when sending, the required `SNDSTAT` lines did not come on, or no XON followed an XOFF. With `INPUT` via `KI`, also the receive timeout. | after the timeout |
+| **144** | A port file is already open | at `OPEN` / `SETDEV` |
+| **155** | `SETDEV "COM:"`, or `SNDBRK` to a port that is not selected | |
+
+An overrun (142) can also happen with a big buffer. While the PC-1600 evaluates numeric
+functions, comparisons, `USING` formats and everything in MODE 1, the work runs on the second
+CPU, and the receive interrupt is held off (ROM). A slow calculation inside a receive loop can
+therefore lose a character. At 9600 baud a character must be fetched within about 2 ms. Keep
+receive loops simple, or read first and compute afterwards.
+
+#### Interrupts and wake-up
+
+- `ON COMn GOSUB` / `COMn ON|OFF|STOP` — see above. Only the selected port can interrupt, since
+  there is one controller.
+- `ON PHONE GOSUB` / `PHONE ON|OFF|STOP` — the CI line (pin 9, ring indicator) is checked every
+  0.5 s while the computer is on. While CI stays on, the request repeats.
+- `WAKE$(1)="<command>"+CHR$(13)` switches the computer **on** when CI goes on (held for more
+  than 1 s, TRM) and runs the command.
+
+#### A typical set-up
+
+A transfer program for the RS-232C port with a 3-wire cable (TXD, RXD, GND) and no handshake
+lines:
+
+```
+10 SETCOM "COM1:",9600,8,N,1,N,N   ' 8 bits, no XON/XOFF, no shift
+20 SETDEV "COM1:"                  ' select RS-232C, clears the buffer
+30 OUTSTAT "COM1:"                 ' automatic RTS/DTR
+40 SNDSTAT "COM1:",28,0            ' send without waiting for CTS
+50 RCVSTAT "COM1:",28,0            ' accept data whatever the lines say
+60 INIT "COM1:",1024               ' receive buffer (see appendix)
+```
+
+With a full cable whose CTS input is wired to the other side's RTS, use
+`SNDSTAT "COM1:",24,0` instead, and leave `RCVSTAT` at 28. For the other side's flow control,
+see [Serial communication in practice](#serial-communication-in-practice).
 
 ### 13. Debugging
 
@@ -755,8 +1134,8 @@ as illustrative.
 - **Purpose:** Printer pen colour: `0` black, `1` blue, `2` green, `3` red. Default at power-on `0`.
 
 #### COM$  **(PC-1600)**
-- **Format:** `COM$ "COMn:"` — **Abbr.** `COM.` — **See also:** SETCOM
-- **Purpose:** String of the communication parameters set by the last `SETCOM` for that port, in `SETCOM` order (`<BR>,<WL>,<PR>,<ST>,<XO>,<SI>`). `"COM:"` = currently opened port.
+- **Format:** `COM$ "COMn:"` — **Abbr.** `COM.` — **See also:** SETCOM, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** String of the communication parameters of that port, in `SETCOM` order (`<BR>,<WL>,<PR>,<ST>,<XO>,<SI>`). The baud rate shown is the one actually set (e.g. `15360` after `SETCOM …,14400`). `"COM:"` = currently selected port.
 
 ```
 10:SETCOM "COM1:",300,8,N,1,X,S
@@ -764,8 +1143,8 @@ as illustrative.
 ```
 
 #### COMn ON / OFF / STOP  **(PC-1600)**
-- **Format:** `COMn ON` | `COMn OFF` | `COMn STOP` — **See also:** ON COMn GOSUB, SETCOM
-- **Purpose:** Enable/disable interrupts from port `n` (`1` = RS-232C, `2` = optical). `ON` + `ON COMn GOSUB` to branch; `OFF` ignores; `STOP` ignores but latches the last request for a later `ON`. **Default STOP.**
+- **Format:** `COMn ON` | `COMn OFF` | `COMn STOP` — **See also:** ON COMn GOSUB, SETCOM, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Enable/disable interrupts from port `n` (`1` = RS-232C, `2` = SIO). `ON` + `ON COMn GOSUB` to branch; `OFF` ignores; `STOP` ignores but latches the last request for a later `ON`. **Default STOP.** The interrupt fires for every character received on the selected port, including XON/XOFF/SI/SO.
 
 #### CONT
 - **Format:** `CONT` — **Abbr.** `C.` — **See also:** RESUME, RUN, STOP, WAIT
@@ -880,8 +1259,9 @@ as illustrative.
 - **Purpose:** Free space in bytes on `S1:`, `S2:`, `X:` or `Y:`.
 
 #### DEV$  **(PC-1600)**
-- **Format:** `DEV$` — **See also:** SETDEV
-- **Purpose:** String showing the current `SETDEV` output-routing settings.
+- **Format:** `DEV$` — **See also:** SETDEV, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** String showing the current `SETDEV` output-routing settings (manual).
+- **Note:** the ROM has no native PC-1600 handler for this keyword (it is the CE-158 token, passed to the PC-1500 function table). Unverified on hardware.
 
 ---
 
@@ -1011,7 +1391,7 @@ GPRINT "102812F0122810"
 - **Purpose:**
   1. **Module in slot 1/2** (MODE 0 only): `"F"` format as RAM disk; `"M"` add to internal user area (bigger programs); `"P"` program-storage area (one battery-backed program, survives removal). Fails on a module holding programs/files (clear with `KILL` / `NEW` first), a write-protected module, or a `TITLE`-selected program module. A CE-159 (8K) must be all-program or all-expansion.
   2. **`INIT "X:"`** — format a floppy (required for new disks; **erases** any existing contents).
-  3. **`INIT "COMn:",<size>`** — receive-buffer size 80–16383 bytes, or `0` = minimum 40 bytes (also the power-on/reset default). Typical 256. Fails on insufficient memory or while a file is open `FOR APPEND`. Cannot be used inside a `FOR…NEXT` loop.
+  3. **`INIT "COMn:",<size>`** — receive-buffer size 80–16383 bytes (out of range: ERROR 19), or `0` = built-in 40-byte buffer (the power-on default; costs no program memory). One buffer serves both ports. Taken from free memory (ERROR 141 if there is not enough). Clears the buffer. Refused while any file is open and inside a `FOR…NEXT` loop. Sizing: [chapter 12](#12-access-to-serial-ports).
 
 ```
 >INIT"S1:","F"
@@ -1049,8 +1429,8 @@ GPRINT "102812F0122810"
 - **Purpose:** Read items from a sequential file (disk / RAM disk by `<file#>` from `OPEN`; cassette by name, default = next file). Variable order and type must match the file; string variables must be long enough; arrays need `DIM`. Delimiters: comma / space / CR+LF for numbers, comma / CR+LF for strings; leading spaces ignored; a quote inside a string truncates it unless the whole item is quoted. Too few items in the file → waits (press BREAK); excess items are left unread. For cassette (format 2) arrays are given as `A(*)`.
 
 #### INSTAT  **(PC-1600)**
-- **Format:** `INSTAT "COM1:"` — **Abbr.** `INSTA.` — **See also:** OUTSTAT
-- **Purpose:** RS-232C control-signal states as an 8-bit value. Bit (from bit 1): 1 = DTR, 2 = RTS, 3 = CTS, 4 = CD, 5 = DSR, 6 = CI; `0` = signal high, `1` = signal low; bits 7–8 always 0. (`63` / `&3F` = all six low, the default.)
+- **Format:** `INSTAT "COM1:"` — **Abbr.** `INSTA.` — **See also:** OUTSTAT, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** RS-232C handshake-line states as a number. Bit 0 (value 1) = DTR, 1 (2) = RTS, 2 (4) = CTS, 3 (8) = CD, 4 (16) = DSR, 5 (32) = CI; `0` = line on (high), `1` = off (low); bits 6–7 always 0. `63` = all six off (idle, nothing connected). The manual numbers the bits from 1. On `COM2:` the result is always 0.
 
 #### INSTR
 - **Format:** `INSTR([<col>,]X$,Y$)` | `INSTR([<col>,]"<string>","<char>")` — **Abbr.** `INS.`
@@ -1239,8 +1619,8 @@ GPRINT "102812F0122810"
 - **Note:** first execute `POKE &F12C,(PEEK &F12C) OR 1`.
 
 #### ON COMn GOSUB  **(PC-1600)**
-- **Format:** `ON COMn GOSUB <line#/label>` — **Abbr.** `O. COM GOS.` — **See also:** COMn ON/OFF/STOP, RETI
-- **Purpose:** Branch on an interrupt at port `n` (`1` RS-232C, `2` optical). `RETI` to return; max 8 interrupts; default `COMn STOP` unless `COMn ON` follows.
+- **Format:** `ON COMn GOSUB <line#/label>` — **Abbr.** `O. COM GOS.` — **See also:** COMn ON/OFF/STOP, RETI, RXD$, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Branch when a character arrives at port `n` (`1` RS-232C, `2` SIO), including XON/XOFF/SI/SO. Read the data with `RXD$`; `RETI` to return; max 8 interrupts; default `COMn STOP` unless `COMn ON` follows.
 
 #### ON ERROR GOTO
 - **Format:** `ON ERROR GOTO <line#/label>` — **Abbr.** `O. ER. G.` — **See also:** RESUME, ERL, ERN
@@ -1294,8 +1674,8 @@ GPRINT "102812F0122810"
 ```
 
 #### OUTSTAT  **(PC-1600)**
-- **Format:** `OUTSTAT "COM1:"[,<setting>]` — **Abbr.** `OU.` — **See also:** INSTAT
-- **Purpose:** Set RS-232C **RTS**/**DTR**: `<setting>` 0 = both high, 1 = RTS high/DTR low, 2 = RTS low/DTR high, 3 = both low. With no setting, both stay high during serial commands / while receiving and low otherwise; RTS drops low automatically when the receive buffer fills.
+- **Format:** `OUTSTAT "COM1:"[,<setting>]` — **Abbr.** `OU.` — **See also:** INSTAT, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Set RS-232C **RTS**/**DTR**. `<setting>` fixes them (manual mode): 0 = both on (high), 1 = RTS on/DTR off, 2 = RTS off/DTR on, 3 = both off. With no setting (automatic mode, the power-on default): both on while a port command runs or a port file is open, off otherwise; RTS also goes off when the receive buffer is down to 8 free bytes and after each 256-byte record of a file transfer, so it works as "ready to receive". No effect on `COM2:`.
 
 ### P
 
@@ -1416,8 +1796,8 @@ GPRINT "102812F0122810"
 - **Purpose:** Reseed `RND` so a different sequence is produced from each power-on. Put at the start of a program.
 
 #### RCVSTAT  **(PC-1600)**
-- **Format:** `RCVSTAT "COMn:",<protocol>[,<timeout>]` — **Abbr.** `RC.` — **See also:** INSTAT, SNDSTAT
-- **Purpose:** RS-232C receive handshake and serial timeout. `<protocol>` is an 8-bit value; bit 3 = CTS must be high, bit 4 = CD must be high, bit 5 = DSR must be high (bit = 0 means "must be high", 1 means "don't care"); bits 1,2,6,7,8 unused (set 0). No meaning for the optical port. `<timeout>` 0–255 in 0.5 s units; `0` = infinite (default).
+- **Format:** `RCVSTAT "COMn:",<protocol>[,<timeout>]` — **Abbr.** `RC.` — **See also:** INSTAT, SNDSTAT, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Receive condition and timeout. `<protocol>`: bit 2 (value 4) = CTS, bit 3 (8) = CD, bit 4 (16) = DSR; a **0** bit means the line must be on, **1** = don't care; other bits are ignored (28 ≡ 63 = none, 24 ≡ 59 = CTS). Bytes arriving while a required line is off are **discarded**. This is a filter, not flow control. `<timeout>` 1–255 × 0.5 s for a reading command waiting on an empty buffer; `0` = infinite. Power-on: nothing required, infinite. **Give both values.** An omitted protocol becomes 4 (CD + DSR required), an omitted timeout 31.5 s. On `COM2:` only the timeout counts.
 
 #### READ … DATA
 - **Format:** `READ <list of variables>` … `DATA <list of constants>` — **Abbr.** `REA.` / `DA.` — **See also:** DATA, RESTORE
@@ -1492,8 +1872,8 @@ GPRINT "102812F0122810"
 - **Purpose:** Execute from the lowest line (or the given line/label). Clears all variables and arrays and resets the `DATA` pointer.
 
 #### RXD$  **(PC-1600)**
-- **Format:** `RXD$`
-- **Purpose:** Hex string of the byte currently arriving at the `SETDEV`-selected serial port. No data → `&20 &20`; communication error → `&3F &20 &20`.
+- **Format:** `RXD$` — **See also:** [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Takes the next received character from the receive buffer and returns it as a one-character string, without waiting. Nothing received → two blanks (`&20 &20`). Communication error → `"?"` + two blanks, and the buffer and the error are cleared.
 
 ---
 
@@ -1501,7 +1881,7 @@ GPRINT "102812F0122810"
 
 #### SAVE / SAVE*
 - **Format:** `SAVE "<d:filename>"[,A]` | `SAVE* "<d:filename>"` — **Abbr.** `S.` — **See also:** LOAD, MERGE
-- **Purpose:** Save a program/data file to `S1:`/`S2:`, `X:`/`Y:`, `CAS:` or a serial port. `,A` = ASCII (else compressed binary). `SAVE*` saves **only** comment lines (`REM` / `'`) — a simple text store (retrieve with `LOAD*`). No extension → `.BAS` added. Overwrites an existing file unless `SET`-P or the medium is write-protected. To a port, only `COM2:` with `,A`; CR+LF = end of line, `&1A` = end of file.
+- **Purpose:** Save a program/data file to `S1:`/`S2:`, `X:`/`Y:`, `CAS:` or a serial port. `,A` = ASCII (else compressed binary). `SAVE*` saves **only** comment lines (`REM` / `'`) — a simple text store (retrieve with `LOAD*`). No extension → `.BAS` added. Overwrites an existing file unless `SET`-P or the medium is write-protected. To a port (`COM1:`/`COM2:`), `,A` sends ASCII text with CR+LF line ends and `&1A` at the end; without `,A` the PC-1600 binary format is sent (see [chapter 12](#output-to-a-port)). The manual's dictionary page names only `COM2:`.
 
 ```
 >SAVE"X:CHESS"
@@ -1513,17 +1893,17 @@ GPRINT "102812F0122810"
 - **Purpose:** File write-protection on floppy / RAM disk. With `"P"` set: no writing (`OPEN` for `OUTPUT`/`APPEND` fails), no `KILL`, no `NAME`. Release with a space in place of `"P"`.
 
 #### SETCOM  **(PC-1600)**
-- **Format:** `SETCOM "COMn:",[<BR>],[<WL>],[<PR>],[<ST>],[<XO>],[<SI>]` — **Abbr.** `SETC.` — **See also:** COM$, SETDEV
-- **Purpose:** Serial-port protocol. `<BR>` 50–38400; `<WL>` 5–8; `<PR>` `E`/`O`/`N`; `<ST>` 1/2; `<XO>` `X`/`N` (XON/XOFF); `<SI>` `S`/`N` shift in/out (7-bit data only). Defaults: RS-232C `1200,8,N,1,X,S`; optical `38400,7,E,2,X,S`.
-- **Note:** for `SAVE`/`LOAD`/`BSAVE`/`BLOAD` over a port, `<WL>` must be 8 and `<SI>` = `N` (unrestricted for ASCII `SAVE`/`LOAD` and for `PRINT#`/`INPUT#`).
+- **Format:** `SETCOM "COMn:",[<BR>],[<WL>],[<PR>],[<ST>],[<XO>],[<SI>]` — **Abbr.** `SETC.` — **See also:** COM$, SETDEV, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Serial line format. `<BR>` 50–38400 (rounded to 76800/n: 14400 → 15360); `<WL>` 5–8; `<PR>` `E`/`O`/`N`; `<ST>` 1/2; `<XO>` `X`/`N` (XON/XOFF); `<SI>` `S`/`N` shift in/out (effective with 7 data bits only). Only `<BR>` may be a variable or expression; the other fields are literal characters. Omitted fields keep their value; `SETCOM "COMn:"` alone sets `1200,8,N,1,X,S`. Defaults (ALL RESET): RS-232C `1200,8,N,1,X,S`; SIO `38400,7,E,2,X,S`. Kept over power-off. On the selected port the receive buffer is cleared.
+- **Note:** for binary `SAVE`/`LOAD`/`BSAVE`/`BLOAD` over a port, `<WL>` must be 8 and `<SI>` = `N` (unrestricted for ASCII `SAVE`/`LOAD` and for `PRINT#`/`INPUT#`).
 
 ```
 >SETCOM "COM1:",,,E
 ```
 
 #### SETDEV  **(PC-1600)**
-- **Format:** `SETDEV "COMn:"[,PO][,KI]` — **Abbr.** `SE.`
-- **Purpose:** Open a serial port for I/O. `PO` = send `LPRINT`/`LLIST`/`LFILES` output to the port; `KI` = take `INPUT` data from the port. `SETDEV` with no parameters reverts output to the printer and input to the keyboard.
+- **Format:** `SETDEV "COMn:"[,PO][,KI]` — **Abbr.** `SE.` — **See also:** [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Select a serial port. This switches the hardware to it (RS-232C drivers on for `COM1:`), loads its `SETCOM` parameters and clears the receive buffer. `PO` = send `LPRINT`/`LLIST`/`LFILES` output to the port; `KI` = take `INPUT` data from the port. Without `PO`/`KI` output returns to the printer and input to the keyboard. `"COM:"` is not allowed (ERROR 155); ERROR 144 if a port file is open. The manual's `SETDEV` without a device is not handled by the native ROM code; use `SETDEV "COM2:"` to release RS-232C.
 
 #### SGN
 - **Format:** `SGN(<X>)` — **Abbr.** `SG.`
@@ -1534,12 +1914,16 @@ GPRINT "102812F0122810"
 - **Purpose:** Sine of `X`; unit per `DEGREE` / `RADIAN` / `GRAD`.
 
 #### SNDBRK  **(PC-1600)**
-- **Format:** `SNDBRK "COMn:",<number>` — **Abbr.** `SNDB.`
-- **Purpose:** Send `<number>` (1–255) continuous break characters to a port to halt the other end's transmission (send several — the first may be missed).
+- **Format:** `SNDBRK "COMn:",<number>` — **Abbr.** `SNDB.` — **See also:** [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Hold the line in the break state for `<number>` (1–255) character times at the current format, to halt the other end's transmission (send several, because the first may be missed). The port must be the selected one.
 
 #### SNDSTAT  **(PC-1600)**
-- **Format:** `SNDSTAT "COMn:",<protocol>[,<timeout>]` — **Abbr.** `SN.` — **See also:** RCVSTAT
-- **Purpose:** RS-232C send handshake + serial timeout. `<protocol>` 0–255: bit 3 = CTS must be high, bit 4 = CD must be high, bit 5 = DSR must be high (0 = "must be high", 1 = "don't care"); bits 1,2,6,7,8 = 0. No meaning for the optical port. `<timeout>` 0–255 × 0.5 s, `0` = infinite (default).
+- **Format:** `SNDSTAT "COMn:",<protocol>[,<timeout>]` — **Abbr.** `SN.` — **See also:** RCVSTAT, [chapter 12](#12-access-to-serial-ports)
+- **Purpose:** Send handshake and timeout. Before each byte the PC-1600 waits until the required lines are on. `<protocol>`: bit 2 (value 4) = CTS, bit 3 (8) = CD, bit 4 (16) = DSR; **0** = must be on, **1** = don't care; other bits ignored (24 ≡ 59 = CTS, 28 ≡ 63 = none). `<timeout>` 1–255 × 0.5 s per byte (also for waiting on XON), then ERROR 143; `0` = infinite. **Power-on: CTS required, infinite**, so a PC-1600 with CTS unconnected hangs on sending until BREAK. **Give both values.** An omitted protocol becomes 4 (CD + DSR required), an omitted timeout 29.5 s. On `COM2:` only the timeout counts.
+
+```
+>SNDSTAT "COM1:",28,0
+```
 
 #### SORGN
 - **Format:** `SORGN` — **Abbr.** `SO.` — **See also:** LLINE, GLCURSOR
@@ -2040,6 +2424,256 @@ CE-150/CE-158 tape and listing commands and PC-1500 machine code that touches th
   with a `"COM…:"` device.
 - The CE-1600P plotter.
 - `TIME = 0` is an error in both modes.
+
+---
+
+## Serial communication in practice
+
+*Background to [chapter 12](#12-access-to-serial-ports): what the handshake mechanisms are for,
+and what changes when the other side is a modern computer with a USB serial adapter. Statements
+about the PC-1600 come from the manuals and the ROM, as in chapter 12. Statements about modern
+operating systems describe the general mechanisms; buffer sizes depend on the driver and adapter
+in use.*
+
+### RS-232C in a nutshell
+
+RS-232C connects a **DTE** (data terminal equipment: a computer or terminal) to a **DCE** (data
+communication equipment: originally a modem). The PC-1600 is a **DTE**. Each signal is named from
+the DTE's point of view:
+
+| Signal | Direction (DTE view) | Original meaning | How the PC-1600 uses it |
+|---|---|---|---|
+| TXD / RXD | out / in | the data | the data |
+| RTS | out | "I want to send" (modem should switch to transmit) | automatic mode: **"I can receive"** — goes off when the buffer is nearly full |
+| CTS | in | "you may send now" | by default required before each byte is sent (`SNDSTAT`) |
+| DTR | out | "terminal is switched on and ready" | on while a port command runs or a port file is open |
+| DSR | in | "modem is switched on and ready" | optional condition for `SNDSTAT` / `RCVSTAT` |
+| CD (DCD) | in | "modem has a carrier" (connection established) | optional condition for `SNDSTAT` / `RCVSTAT` |
+| CI (RI) | in | "the telephone is ringing" | `ON PHONE GOSUB`, `WAKE$(1)` |
+
+The line idles in the *mark* state. A character is a start bit, 5–8 data bits (least significant
+first), an optional parity bit and 1 or 2 stop bits. A **break** holds the line in the *space*
+state for longer than a whole character. Receivers recognise it as a special event, and old
+systems used it as an "attention" or interrupt signal (`SNDBRK`).
+
+**Connecting two DTEs** (e.g. a PC-1600 and a PC) needs a *null-modem* cable, which crosses the
+lines:
+
+| PC-1600 (15-pin) | | Other computer |
+|---|---|---|
+| 2 TXD | → | RXD |
+| 3 RXD | ← | TXD |
+| 4 RTS | → | CTS |
+| 5 CTS | ← | RTS |
+| 14 DTR | → | DSR (and often DCD) |
+| 6 DSR, 8 CD | ← | DTR |
+| 7 SG | — | GND |
+
+With a 3-wire cable (TXD, RXD, GND) there is no hardware handshake at all. Then
+`SNDSTAT "COM1:",28,0` is mandatory, because the PC-1600 otherwise waits forever for CTS.
+
+### Flow control
+
+A receiver that cannot keep up must be able to make the sender pause. There are two ways to do
+this.
+
+**Hardware flow control (RTS/CTS).** The receiver turns a handshake line off, and the sender checks
+that line before every character. Modern equipment uses RTS as "ready to receive" and CTS as
+"clear to send". "RTS/CTS" names a *pair* of wires, and **each direction uses one of them**:
+
+| Direction | Wire (null-modem cable) | Driven by | Obeyed by | PC-1600 setting |
+|---|---|---|---|---|
+| **Other side → PC-1600** | PC-1600 **RTS** (pin 4) → other side's **CTS** | PC-1600: RTS goes off at 8 free bytes and after every 256-byte record of a file transfer | the other side, before each character | `OUTSTAT "COM1:"` (automatic mode) |
+| **PC-1600 → other side** | other side's **RTS** → PC-1600 **CTS** (pin 5) | the other side | PC-1600, before each byte | `SNDSTAT "COM1:",24,0` |
+
+How fast the sender reacts depends on where it checks its CTS input. A UART that checks in
+hardware stops within one or two characters.
+
+`RCVSTAT` is **not** part of either row, even though setups often describe `RCVSTAT …,24` as
+"enable RTS/CTS":
+
+- It only tells the PC-1600 to *discard* bytes that arrive while its CTS (or CD, DSR) input is
+  off.
+- In the host → PC-1600 direction that input carries the host's RTS. A host with hardware flow
+  control on keeps its RTS on while it is ready, so the filter usually changes nothing. At worst
+  it silently drops data.
+- Use `RCVSTAT "COM1:",28,0` unless the other side really uses the line to mean "data valid".
+
+**Software flow control (XON/XOFF).** The receiver sends the control characters XOFF (`&13`,
+DC3, "Ctrl-S") and XON (`&11`, DC1, "Ctrl-Q") on its *data* line. This needs no extra wires,
+but it has three costs:
+
+- the data themselves must not contain `&11` or `&13`, so it does not suit binary data;
+- the XOFF takes a full character time to arrive;
+- the sender must recognise it *before* it hands out further data.
+
+The method dates from terminals and printers whose senders reacted character by character.
+
+**Shift in / shift out (SI/SO).** This is not flow control but an encoding. On a link with only
+7 data bits, `&0E` (SO) announces that the following characters belong to the "upper" half of
+the character set, and `&0F` (SI) switches back. The PC-1600 uses it to carry its codes ≥ `&80`
+over 7-bit links (see [chapter 12](#software-flow-control-xonxoff-and-shift-inout)). With
+8-bit links it is not needed.
+
+### Modern hosts: USB serial adapters, Linux and macOS
+
+A PC-1600 is usually connected today to a USB serial adapter (FTDI, Prolific, Silicon Labs,
+WCH…). The driver details below are for the common **FTDI FT232R**, as found in the TTL-232R
+cables, with the standard drivers:
+
+- Linux `ftdi_sio`.
+- macOS's built-in **AppleUSBFTDI**.
+- Not FTDI's own macOS driver, VCP 1.6.0. It forces the XON/XOFF characters to `&04`/`&05` and
+  never reports receive errors, so it is unsuitable here.
+
+They come from an analysis of the driver code and have not yet been tested against a PC-1600.
+Other adapters and drivers may differ.
+
+- **`COM1:`** needs an adapter with RS-232 polarity: idle and logical 1 = negative voltage.
+  - A real RS-232 adapter matches this directly.
+  - Logic-level (TTL) adapters can be used only if their data and handshake signals are
+    inverted. Some adapters can be configured that way; FTDI chips, for example, through their
+    configuration EEPROM.
+  - The PC-1600's outputs swing to about −8.5 V. Check that the adapter's inputs tolerate this.
+- **`COM2:`** is at logic level (5 V). According to the TRM, its data lines carry the UART
+  signals **inverted** relative to a TTL UART. This is untested here.
+- **Baud rate:** the FT232R cannot go below about 183 baud, so the PC-1600's 50–150 baud settings
+  are unusable with it.
+  - macOS refuses such a rate.
+  - Linux sets a wrong rate without warning.
+- **Errors:** both drivers report parity and framing errors per USB packet of up to 62 bytes, not
+  per byte. Error checking on the host side is therefore coarse.
+
+#### Why XON/XOFF "doesn't work": the bytes arrive as data
+
+On Linux and macOS, software flow control is requested through the `termios` flags `IXON` (obey
+received XON/XOFF) and `IXOFF` (send them). Whether it is then done in the adapter chip or only
+in the operating system's terminal layer depends on the driver.
+
+- **Most serial programs turn it off.** Programs that open the port in *raw* mode (`cfmakeraw`)
+  clear `IXON`. Most serial libraries also default to "no flow control", e.g. pyserial
+  (`xonxoff=False`) and Rust's `serialport` (`FlowControl::None`). The XOFF that the PC-1600 sends
+  is then **just another received byte**. It arrives in the application's data stream, typically
+  as a stray `&13` (and `&11`) between the data, and nothing stops sending.
+- **macOS quirk:** AppleUSBFTDI only passes the flow-control setting to the chip when DTR, RTS or
+  `IXOFF` change. **`IXON` on its own (`stty ixon -ixoff`) never reaches the chip**, so it has no
+  effect. Set `IXON` and `IXOFF` together; pyserial's `xonxoff=True` does this. Keep the standard
+  characters `&11`/`&13`, because changed characters reach the chip late or not at all.
+- **When it does reach the chip, it works quickly.** This is the case on Linux `ftdi_sio` with
+  `IXON` (correct since a 2018 kernel fix), and on macOS with `IXON`+`IXOFF`. The FT232R then
+  watches its receive line for XOFF and stops sending within a few characters. Data waiting in
+  the driver's and the chip's buffers stay there.
+- **Drivers that leave it to the OS react late.** Some other adapters' drivers only stop passing
+  *new* data to the driver, and everything already queued still goes out. On Linux that can be
+  4 KB of driver queue plus the chip's FIFO. The PC-1600 leaves only 7 bytes of room after its
+  "8 bytes free" XOFF, which this cannot meet. Only the XOFF after each 256-byte record of
+  `LOAD`/`INPUT#` leaves more room.
+- **The XON/XOFF bytes disappear from the host's data.** With XON/XOFF active, AppleUSBFTDI
+  deletes every received `&11`/`&13`, even data bytes. Binary data the PC-1600 *sends* to the
+  host are therefore corrupted. In the host → PC-1600 direction this does not matter.
+- **The unsolicited XON** at the start of every PC-1600 port command (chapter 12) shows up as a
+  leading `&11` in data captured on the host, unless XON/XOFF is active there or the host program
+  filters it.
+- If both are requested, **RTS/CTS wins**: on both systems `CRTSCTS` switches XON/XOFF off in
+  the chip.
+
+**What works:**
+
+- When the PC-1600 *sends* to the host, set `<xon>` = `N` on the PC-1600 and nothing is lost:
+  modern hosts are much faster than the PC-1600.
+- When the host *sends* text to the PC-1600, chip-level XON/XOFF is a workable fallback if
+  RTS/CTS is not wired. Check that the setting actually reaches the chip (see the macOS quirk
+  above).
+- For binary transfers use RTS/CTS or pacing, not XON/XOFF. See [Receive buffer
+  size](#receive-buffer-size-why-4096-is-sometimes-not-enough).
+
+#### RTS/CTS with a USB adapter
+
+Hardware flow control is the right tool, because the FT232R implements it **in the chip** on both
+systems. For the host → PC-1600 direction (first row of the [direction table](#flow-control)):
+
+- the host side enables it with `CRTSCTS` (`stty crtscts`, pyserial `rtscts=True`). On macOS set
+  the full `CRTSCTS`: AppleUSBFTDI ignores output CTS flow control (`CCTS_OFLOW`) set on its own;
+- the PC-1600's RTS (pin 4) is wired to the adapter's CTS;
+- the PC-1600 runs `OUTSTAT "COM1:"` (automatic mode) and `RCVSTAT "COM1:",28,0`.
+
+The chip then holds back the next character as soon as the PC-1600's RTS goes off. FTDI does not
+document how many characters can still go out after CTS drops. It should be within the PC-1600's
+7-byte margin, and the stop after each 256-byte record leaves almost the whole buffer.
+
+Two caveats:
+
+- **Test before relying on it.** Send a file larger than the receive buffer, e.g. 8 KB with
+  `INIT "COM1:",1024`.
+  - A setup in which the host ignored CTS when sending to the PC-1600 was once reported with an
+    FTDI adapter on an Apple-Silicon Mac.
+  - Current AppleUSBFTDI does gate on CTS in the chip with `CRTSCTS`, so a driver bug is no
+    longer a likely explanation.
+  - More likely causes are a program that set only `CCTS_OFLOW`, or an older macOS version.
+- In automatic mode the PC-1600's RTS is **off whenever no port command is running**. The host
+  can only send while a `LOAD`, `INPUT#` or similar is active on the PC-1600. That is intended:
+  data sent earlier would be lost anyway.
+
+For the other direction (second row of the table), wire the adapter's RTS to the PC-1600's CTS
+(pin 5) and use `SNDSTAT "COM1:",24,0`. Without that wire, use `SNDSTAT "COM1:",28,0`.
+
+#### Receive buffer size: why 4096 is sometimes not enough
+
+**Observed:** when a host sends to the PC-1600, `INIT "COM1:",4096` often ends in ERROR 142, while
+8192 works. The ROM explains why:
+
+- The buffer only has to hold what the host sends **after the PC-1600 has asked it to stop**.
+- The PC-1600 asks after every 256-byte record (XOFF and/or RTS off), and again at 8 free bytes.
+- It then processes the record and waits about 13 character times before it reads on.
+- Meanwhile the interrupt keeps filling the buffer. When the buffer is full, further bytes are
+  lost, and the next read reports ERROR 142.
+
+How much the host overshoots decides what size is needed:
+
+| Host behaviour | Overshoot after "stop" | Buffer that works |
+|---|---|---|
+| Stops in the adapter chip: RTS/CTS, or XON/XOFF that reaches the chip | a few bytes | **512–1024** |
+| Stops in the OS only (drivers without chip-level flow control) | the driver queue plus the chip FIFO: on Linux up to about **4.4 KB** | about **6144**; 4096 is just too small |
+| Does not stop (flow control off, XOFF arrives as data); continuous sending | grows with every record: the PC-1600 is slower than the line, so the backlog grows over the whole transfer | larger than the **whole file**, with some margin |
+| Does not stop, but paced (delay after each byte or line) | small, if the pace is below what the PC-1600 can process | 1024–2048 |
+
+With an FT232R and its standard drivers, the second row does not occur. A "4096 fails, 8192
+works" pattern there means a host that does not stop at all (third row, or the fourth with a
+pace that is slightly too fast): 8192 is simply larger than the files being sent.
+
+**Memory cost.** The buffer is taken from the same free memory that the program being loaded
+needs. On a base PC-1600 (about 11.8 KB free) an 8 KB buffer leaves about 3.6 KB for the
+program, so `LOAD "COM1:"` of a larger program then fails for lack of memory, not with ERROR 142.
+
+**Recommendations**, in order of preference:
+
+1. **Make the host stop in hardware.** Use chip-level RTS/CTS as described above, with
+   `OUTSTAT "COM1:"`, `RCVSTAT "COM1:",28,0` and `INIT "COM1:",1024`.
+2. **Otherwise pace the host** so that the PC-1600 keeps up. Use a short delay after every byte
+   or every line (the TRM suggests 0.1–1 s per line), or a lower baud rate. The PC-1600's
+   processing speed does not change with the baud rate, so at 4800 baud or below the backlog
+   stays small. Then 1024–2048 bytes are enough. For text, chip-level XON/XOFF is an
+   alternative.
+3. **Only if neither is possible**, use a buffer larger than the file plus about 256 bytes. Release
+   the memory right after the transfer with `INIT "COM1:",0`. A power-off releases it too.
+
+For binary transfers, turn XON/XOFF off on both sides (`SETCOM …,N,N` on the PC-1600, no
+`IXON`/`IXOFF` on the host). Otherwise `&11`/`&13` data bytes are mistaken for flow control or
+deleted by the driver.
+
+### Checklist for a failed transfer
+
+| Symptom | Likely cause |
+|---|---|
+| PC-1600 hangs when sending; BREAK needed | CTS required (power-on default) but not connected or off. Use `SNDSTAT "COM1:",28,0`. |
+| ERROR 143 after about 30 s | `SNDSTAT`/`RCVSTAT` written without a timeout: the ROM then uses 29.5 s / 31.5 s. Add `,0`. |
+| Nothing received, no error | Port not selected (`SETDEV`), `RCVSTAT` requires a line that is off (data are discarded), or wrong baud rate or format |
+| ERROR 142 during a host → PC-1600 transfer | Buffer overrun: host overshoots after XOFF/RTS (see above), or the baud rate is too high for the work done per character |
+| Stray `&11`/`&13` bytes in host captures | XON/XOFF on at the PC-1600 (`X`) but off on the host (or, on macOS, only `IXON` set). Set `N` on the PC-1600. |
+| Host ignores the PC-1600's RTS | Host flow control not enabled in the chip: use the full `CRTSCTS`, check the wiring (PC-1600 pin 4 → adapter CTS) |
+| Garbled 8-bit characters | 7 data bits set; use 8, or `S` with a host that understands SI/SO |
+| ERROR 144 | A port file is still open: `CLOSE` |
+| Batteries drain fast | `COM1:` still selected: `SETDEV "COM2:"` when done |
 
 ---
 
