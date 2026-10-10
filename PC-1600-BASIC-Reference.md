@@ -496,6 +496,20 @@ it.
 | SETCOM default | `1200,8,N,1,X,S` | `38400,7,E,2,X,S` |
 | Selected at power-on | — | **yes** |
 
+Line names (direction seen from the PC-1600):
+
+- **TXD / RXD** — transmit / receive data.
+- **RTS** (out) / **CTS** (in) — request to send / clear to send. Today used as hardware flow
+  control: "I can receive" / "you may send".
+- **DTR** (out) — data terminal ready: "the PC-1600 is on and its port is in use".
+- **DSR** (in) — data set ready: "the modem (or other device) is on and ready".
+- **CD** (in) — carrier detect: the modem has a connection to the remote modem.
+- **CI** (in) — calling indicator (ring indicator, RI): the telephone line is ringing.
+- **GND** — signal ground.
+
+DSR, CD and CI come from the modem era. Modern equipment rarely uses them. See [RS-232C in a
+nutshell](#rs-232c-in-a-nutshell) for their original meaning and how the PC-1600 uses each one.
+
 **RS-232C connector (`COM1:`)**
 
 | Pin | Signal | Dir | Notes |
