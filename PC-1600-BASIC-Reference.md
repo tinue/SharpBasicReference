@@ -2648,7 +2648,8 @@ program, so `LOAD "COM1:"` of a larger program then fails for lack of memory, no
 **Recommendations**, in order of preference:
 
 1. **Make the host stop in hardware.** Use chip-level RTS/CTS as described above, with
-   `OUTSTAT "COM1:"`, `RCVSTAT "COM1:",28,0` and `INIT "COM1:",1024`.
+   `OUTSTAT "COM1:"`, `RCVSTAT "COM1:",28,0` and `INIT "COM1:",1024`. A 1024-byte buffer has been
+   confirmed on a real PC-1600 with a transfer of more than 50 KB.
 2. **Otherwise pace the host** so that the PC-1600 keeps up. Use a short delay after every byte
    or every line (the TRM suggests 0.1–1 s per line), or a lower baud rate. The PC-1600's
    processing speed does not change with the baud rate, so at 4800 baud or below the backlog
