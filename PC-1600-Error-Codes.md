@@ -168,7 +168,7 @@ even looks at the file name.
   `OPEN … AS #3` gives 153, not 150: error 150 is about how many files are open at once, not which
   `#n` you use.
 
-*Source: NEW ROM bank 3b. `OPEN` (667DH) calls `FREEFCB` (77BFH), error set at 6683H; `MAXFILES`
+*Source: [NEW ROM bank 3b](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm). `OPEN` (667DH) calls `FREEFCB` (77BFH), error set at 6683H; `MAXFILES`
 (6618H): out of memory at 664FH, `FOR` check at 6636H / 6662H, n > 15 at 6629H, file open at 6632H;
 `OPEN` file number check at 672EH.*
 
