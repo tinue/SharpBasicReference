@@ -168,9 +168,10 @@ even looks at the file name.
   `OPEN … AS #3` gives 153, not 150: error 150 is about how many files are open at once, not which
   `#n` you use.
 
-*Source: [NEW ROM bank 3b](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm). `OPEN` (667DH) calls `FREEFCB` (77BFH), error set at 6683H; `MAXFILES`
-(6618H): out of memory at 664FH, `FOR` check at 6636H / 6662H, n > 15 at 6629H, file open at 6632H;
-`OPEN` file number check at 672EH.*
+*Source: [NEW ROM bank 3b](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm). `OPEN` ([667DH](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6822)) calls `FREEFCB` ([77BFH](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L9592)),
+error set at [6683H](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6830); `MAXFILES` ([6618H](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6741)): out of memory at [664FH](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6780),
+`FOR` check at [6636H](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6763) / [6662H](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6791), n > 15 at [6629H](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6756), file open at [6632H](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6761);
+`OPEN` file number check at [672EH](https://github.com/tinue/PC-1600-ROM/blob/main/disasm/new/PC1600-P1-B3B.asm#L6918).*
 
 [↑ back to File errors](#file-errors)
 
