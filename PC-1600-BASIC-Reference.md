@@ -1581,6 +1581,7 @@ GPRINT "102812F0122810"
 #### MAXFILES  **(PC-1600)**
 - **Format:** `MAXFILES = <number of files>` — **Abbr.** `MA.` — **See also:** CLOSE, OPEN
 - **Purpose:** Maximum simultaneously open files, 0–15 (0 at power-on, so it must be set before any `OPEN`). All files must be closed when it runs. Each file reserves 313 bytes (grows as needed). Cannot be used inside a `FOR…NEXT` loop.
+- **Remarks:** Errors: n > 15 → 19; a file still open → 154; not enough memory for the buffers, or run inside an unfinished `FOR` loop → 150 (see [the note on error 150](PC-1600-Error-Codes.md#error-150)).
 
 #### MEM
 - **Format:** `MEM` — **Abbr.** `M.` — **See also:** STATUS
@@ -1667,6 +1668,7 @@ GPRINT "102812F0122810"
 #### OPEN  **(PC-1600)**
 - **Format:** `OPEN "<d:filename>" FOR {INPUT|OUTPUT|APPEND} AS #<file#>` — **Abbr.** `OP.` — **See also:** CLOSE, INPUT#, MAXFILES, PRINT#
 - **Purpose:** Open a file and bind it to `<file#>` (1…`MAXFILES`). `INPUT` reads with `INPUT#`; `OUTPUT` writes a **new** file with `PRINT#` (overwrites any existing file of that name); `APPEND` adds to an existing file with `PRINT#`. A file cannot be open for input and output at once — close and reopen. Fails: `OUTPUT` on a `SET`-P file; write-protected floppy/RAM module; `APPEND` on `COM1:`/`COM2:`/`CAS:`.
+- **Remarks:** Errors: all `MAXFILES` buffers already in use, or `MAXFILES` = 0 → 150 (see [the note on error 150](PC-1600-Error-Codes.md#error-150)); `#n` = 0 or greater than `MAXFILES` → 153.
 
 ```
  5:MAXFILES=1

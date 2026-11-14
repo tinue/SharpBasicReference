@@ -10,6 +10,9 @@ The PC-1600 keeps the PC-1500 codes 1–39 (with minor wording changes) and adds
 for its new subsystems. In **MODE 1** with PC-1500 peripherals (CE-150 / CE-158 / CE-162E) the
 PC-1500 peripheral codes (40–80) also apply — see the [PC-1500 Error Codes](PC-1500-Error-Codes.md).
 
+Codes shown as links have a note in [Notes on individual codes](#notes-on-individual-codes). The
+table keeps the manual's wording; the note explains where that wording is incomplete or wrong.
+
 ---
 
 ## Program errors
@@ -119,7 +122,7 @@ Details and causes: [PC-1600 BASIC Reference, chapter 12](PC-1600-BASIC-Referenc
 
 | Code | Cause |
 |------|-------|
-| **150** | Too many files specified in `MAXFILES` |
+| [**150**](#error-150) | Too many files specified in `MAXFILES` |
 | **151** | File already exists — use another name |
 | **152** | File not found; or disk full when saving with `SAVE` |
 | **153** | Incorrect file number — file with that number is not open |
@@ -138,6 +141,38 @@ Details and causes: [PC-1600 BASIC Reference, chapter 12](PC-1600-BASIC-Referenc
 | **166** | Not enough free memory for the disk drive's internal work area |
 | **167** | Fatal disk error — contents destroyed or corrupted |
 | **168** | CE-1600F Disk Drive not functioning — low battery or hardware fault |
+
+---
+
+## Notes on individual codes
+
+<a id="error-150"></a>
+### Error 150: no free file buffer
+
+**Manual:** "Too many files specified in `MAXFILES`". This is misleading: a `MAXFILES` value that is
+too large (more than 15) gives [error 19](#program-errors), not 150.
+
+**What it actually means:** `OPEN` found no free file buffer. Either all the files that `MAXFILES`
+reserved are already open, or `MAXFILES` is 0 (the power-on value). `OPEN` checks this before it
+even looks at the file name.
+
+`MAXFILES = n` itself can also raise 150:
+- Not enough free memory for n file buffers (313 bytes each).
+- `MAXFILES` run inside an unfinished `FOR` loop. The ROM first sets error 109, then overwrites it
+  with 150 (confirmed on the emulator).
+
+**Related codes:**
+- `MAXFILES` greater than 15 → error 19.
+- Changing `MAXFILES` while a file is open → error 154.
+- `OPEN … AS #n` with n = 0 or n greater than `MAXFILES` → error 153. With `MAXFILES = 2`,
+  `OPEN … AS #3` gives 153, not 150: error 150 is about how many files are open at once, not which
+  `#n` you use.
+
+*Source: NEW ROM bank 3b. `OPEN` (667DH) calls `FREEFCB` (77BFH), error set at 6683H; `MAXFILES`
+(6618H): out of memory at 664FH, `FOR` check at 6636H / 6662H, n > 15 at 6629H, file open at 6632H;
+`OPEN` file number check at 672EH.*
+
+[↑ back to File errors](#file-errors)
 
 ---
 
