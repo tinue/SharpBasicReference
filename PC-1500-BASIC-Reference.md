@@ -31,6 +31,8 @@ The **MODE** key switches between two primary modes:
 | **RUN** | Run programs, enter direct commands |
 | **PRO** | Enter and edit program lines |
 
+A line typed without a line number runs at once (direct mode). Statements separated by `:` work only in stored program lines: typed directly, `A=1:B=2` stops with **ERROR 1**. The same holds on the PC-1500A and the PC-1600.
+
 Press **SHIFT+MODE** to enter the **RESERVE** mode (see [Reserve Keys](#reserve-keys) below).
 
 Use `LOCK` to disable the MODE key and `UNLOCK` to re-enable it.
