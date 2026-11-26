@@ -1440,6 +1440,7 @@ GPRINT "102812F0122810"
 #### INPUT#  **(PC-1600)**
 - **Format:** `INPUT#<file#>,<variable list>` | `INPUT#["<filename>";]<variable list>` — **Abbr.** `I.#` — **See also:** DIM, INPUT, OPEN, PRINT#, SET
 - **Purpose:** Read items from a sequential file (disk / RAM disk by `<file#>` from `OPEN`; cassette by name, default = next file). Variable order and type must match the file; string variables must be long enough; arrays need `DIM`. Delimiters: comma / space / CR+LF for numbers, comma / CR+LF for strings; leading spaces ignored; a quote inside a string truncates it unless the whole item is quoted. Too few items in the file → waits (press BREAK); excess items are left unread. For cassette (format 2) arrays are given as `A(*)`.
+- **Note (ROM defect, both revisions):** a field read into a **numeric** variable is evaluated as an expression: `2*3` gives 6, `HELLO` gives the value of the variable `HE`, and `B$` puts a string into the numeric variable (later arithmetic on it: ERROR 17). Read uncertain fields into a string variable and use `VAL`. Confirmed in an emulator running the original ROM ([details](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Firmware/PC-1600-ROM-Defects.md#1-input-evaluates-a-numeric-field-as-an-expression)).
 
 #### INSTAT  **(PC-1600)**
 - **Format:** `INSTAT "COM1:"` — **Abbr.** `INSTA.` — **See also:** OUTSTAT, [chapter 12](#12-access-to-serial-ports)
@@ -1763,6 +1764,7 @@ GPRINT "102812F0122810"
 #### PRINT# / PRINT# USING  **(PC-1600)**
 - **Format:** `PRINT#<file#>,<list of expressions>` | `PRINT#<file#>,USING <format>;<list>` | `PRINT#["<filename>";]<list of variables>` — **Abbr.** `P.#` / `P.#U.` — **See also:** INPUT#, OPEN, PRINT USING
 - **Purpose:** Write to a sequential output file (disk / RAM disk by `<file#>` from `OPEN`; cassette by name, default = current tape position, no name). `;` = items adjacent; `,` = a blank between items, and a literal delimiting comma must be written as its own quoted `","` item. Cassette form (3) allows only `,` as separator; arrays as `A(*)`, no single elements.
+- **Note (ROM defect, both revisions):** an error in a `USING` format or in an expression of `PRINT#` leaves the wrong `USING` state behind: the item's format stays on for later `PRINT`s, or a format set before by `USING` is lost. This shows only under `ON ERROR GOTO`; start the handler with its own `USING` (alone: no format). Confirmed in an emulator running the original ROM ([details](https://github.com/tinue/Sharp1500-1600-Ref/blob/main/Firmware/PC-1600-ROM-Defects.md#2-print-using-an-error-leaves-the-using-state-wrong)).
 
 #### PRINT USING / USING
 - **Format:** `PRINT USING <format string>;<list of expressions>` | `USING <format string>` — **Abbr.** `P. U.` / `U.` — **See also:** PRINT, LPRINT USING
